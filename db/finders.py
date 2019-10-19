@@ -18,7 +18,7 @@ select_player_names_like_str = "select id, dk_name, fd_name, br_name, rg_name fr
 
 # and %(null_site_abbrv)s_name is null
 
-team_columns = ['id', 'name', 'abbrv']
+team_columns = ['id', 'name', 'abbrv', 'rg_abbrv', 'br_abbrv']
 player_columns = ['id', 'dk_name', 'fd_name', 'br_name', 'rg_name', 'current_team_id']
 game_columns = ['id', 'date', 'home_team_id', 'away_team_id']
 stat_line_columns = ['id', 'player_id', 'team_id', 'game_id', 'dk_positions', 'fd_positions', 'dk_salary', 'fd_salary', 'dk_points', 'fd_points', 'stats']
