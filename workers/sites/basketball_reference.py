@@ -5,11 +5,11 @@ import csv
 import calendar
 import datetime
 
-from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, find_stat_line_by_player_and_game, find_team_by_name
+from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, find_stat_line_by_player_and_game, find_team_by_name, find_player_by_br_name
 from db.creators import create_game
 from helpers import time_stamp_to_minutes
 
-endpoint = 'https://www.basketball-reference.com'
+base_url = 'https://www.basketball-reference.com'
 
 stat_keys = ['minutes', 'minutes_numeric', 'fg', 'fga', 'tp', 'tpa', 'ft',
              'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'pm']
@@ -40,7 +40,7 @@ def gather_box_scores_by_month(year, month):
 def gather_box_scores_by_date(date):
     print("Gathering box scores for date %s" % date)
     year, month, day = date.split('-')
-    main_url = endpoint + \
+    main_url = base_url + \
         '/boxscores/index.cgi?month=%s&day=%s&year=%s' % (month, day, year)
     box_score_urls = get_box_score_urls(main_url)
     for box_score_url in box_score_urls:
@@ -61,7 +61,7 @@ def gather_box_score(date, box_score_url):
     directory = directory_from_date(date)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    page = requests.get(endpoint+box_score_url)
+    page = requests.get(base_url+box_score_url)
 
     tree = html.fromstring(page.content)
     teams = tree.xpath('//div[@itemprop="performer"]/strong/a')
@@ -88,7 +88,7 @@ def create_stat_dict(stat_html):
     trs = stat_html.xpath('./td')
     if len(trs) == 1:
         # did not play
-        stat_vals = [0] * 17
+        stat_vals = [0] * 18
     else:
         minutes = trs[0].text
         minutes_numeric = time_stamp_to_minutes(minutes)
@@ -115,14 +115,22 @@ def create_stat_dict(stat_html):
     stat_dict = dict(zip(stat_keys, stat_vals))
     return name, stat_dict
 
+def scrape_box_scores_by_year(year):
+    for i in range(1, 13):
+        scrape_box_scores_by_month(year, i)
 
-def scrape_box_scores(date):
+def scrape_box_scores_by_month(year, month):
+    num_days = calendar.monthrange(year, month)[1]
+    days = [datetime.date(year, month, day) for day in range(1, num_days+1)]
+    for day in days:
+        scrape_box_scores_by_date(day.isoformat())
+
+def scrape_box_scores_by_date(date):
     directory = directory_from_date(date)
     for _, _, files in os.walk(directory):
         for filename in files:
             if filename.endswith(".html"):
                 filepath = directory+'/'+filename
-                print(filepath)
                 with open(filepath, 'r') as f:
                     html_text = f.read()
                     scrape_box_score(date, html_text)
@@ -141,13 +149,12 @@ def find_game_from_box_score(date, box_score_html):
 def scrape_box_score(date, html_text):
     tree = html.fromstring(html_text)
     game, away_team, home_team = find_game_from_box_score(date, tree)
-    print('Getting stats for game %s, %s at %s' %
-          (str(game['id']), away_team['name'], home_team['name']))
+    print('Scraping stats on %s for %s at %s' %
+          (date, away_team['name'], home_team['name']))
     #tables = tree.xpath('//table[contains(., "Basic Box Score Stats")]')
     full_game_stats = []
     full_game_stats.extend(run_team_stats(home_team, game, tree))
     full_game_stats.extend(run_team_stats(away_team, game, tree))
-    print(len(full_game_stats))
     directory = directory_from_date(date)
     filepath = directory + \
         '/%sv%s.csv' % (away_team['abbrv'], home_team['abbrv'])
@@ -161,7 +168,6 @@ def scrape_box_score(date, html_text):
 
 def run_team_stats(team, game, tree):
     team_all_box_basic = "all_box-%s-game-basic" % team['br_abbrv']
-    print(team_all_box_basic)
     home_team_rows = tree.xpath(
         f"//div[@id=\"{team_all_box_basic}\" and contains(@class, 'table_wrapper')]//tbody/tr[not(@class)]")
     team_stats = []
@@ -211,6 +217,28 @@ def calc_fd_points(sd):
     fpts = sd['pts'] + sd['trb'] * 1.2 + + sd['ast'] * 1.5 + + \
         sd['blk'] * 3 + sd['stl'] * 3 + sd['tov'] * -1.0
     return fpts
+
+def seed_players_by_date(date):
+    directory = directory_from_date(date)
+    for _, _, files in os.walk(directory):
+        for filename in files:
+            if filename.endswith(".csv"):
+                filepath = directory+'/'+filename
+                print(filepath)
+                with open(filepath, 'r') as f:
+                    reader = csv.reader(f)
+                    next(reader, None)
+                    seed_players_from_reader(reader)
+
+
+def seed_players_from_reader(reader):
+    for row in reader:
+        name = row[0]
+        player = find_player_by_br_name(name)
+        if player:
+            return
+        # now we want to determine if we can find it in another name column
+        print(name)
 
 
 def gather_games(year):
