@@ -5,7 +5,8 @@ import csv
 import calendar
 import datetime
 
-from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, find_stat_line_by_player_and_game
+from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, find_stat_line_by_player_and_game, find_team_by_name
+from db.creators import create_game
 from helpers import time_stamp_to_minutes
 
 endpoint = 'https://www.basketball-reference.com'
@@ -212,33 +213,40 @@ def calc_fd_points(sd):
     return fpts
 
 
-'''
-def add_games():
-    # change endpoint based on month
-    months = ['december']
-    for month in months:
-        schedule_url = 'https://www.basketball-reference.com/leagues/NBA_2019_games-%s.html' % month
+def gather_games(year):
+    directory = f"data2/games/{year}"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    for month_num in range(1, 13):
+        month_name = calendar.month_name[month_num].lower()
+        print(month_name)
+        schedule_url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month_name}.html"
         print(schedule_url)
         page = requests.get(schedule_url)
-        tree = html.fromstring(page.content)
-        game_infos = tree.xpath('//table[@id="schedule"]//tbody//tr')
-        date_format = '%a, %b %d, %Y'
-        for game_info in game_infos:
-            date_string = game_info[0].xpath('./a')[0].text
-            date = datetime.strptime(date_string, date_format)
-            away_team_name = game_info[2].xpath('./a')[0].text
-            home_team_name = game_info[4].xpath('./a')[0].text
-            away_team = session.query(Team).filter(
-                Team.name == away_team_name).first()
-            home_team = session.query(Team).filter(
-                Team.name == home_team_name).first()
-            game = session.query(Game).filter_by(
-                date=date, home_team=home_team, away_team=away_team).first()
-            print(date, away_team.name, 'vs.', home_team.name)
-            if not game:
-                print('no game')
-                game = Game(date=date, home_team=home_team,
-                            away_team=away_team)
-                session.add(game)
-                session.commit()
-'''
+        filepath = f"{directory}/{f'{month_num:02}'}.html"
+        with open(filepath, 'w') as f:
+            f.write(page.text)
+
+
+def seed_games(year):
+    directory = f"data2/games/{year}"
+    for month_num in range(1, 13):
+        filepath = f"{directory}/{f'{month_num:02}'}.html"
+        with open(filepath, 'r') as f:
+            page = f.read()
+            tree = html.fromstring(page)
+            game_infos = tree.xpath(
+                '//table[@id="schedule"]//tbody//tr[not(contains(@class, "thead"))]')
+            date_format = '%a, %b %d, %Y'
+            for game_info in game_infos:
+                date_string = game_info[0].xpath('./a')[0].text
+                date = datetime.datetime.strptime(date_string, date_format)
+                season = f"{str(year-1)[2:]}-{str(year)[2:]}"
+                print(date)
+                away_team_name = game_info[2].xpath('./a')[0].text
+                home_team_name = game_info[4].xpath('./a')[0].text
+                home_team = find_team_by_name(home_team_name)
+                away_team = find_team_by_name(away_team_name)
+                game = find_game_by_date_and_team(date, away_team['id'])
+                if not game:
+                    create_game(date, home_team['id'], away_team['id'], season)
