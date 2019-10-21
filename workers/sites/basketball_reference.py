@@ -8,6 +8,7 @@ import datetime
 from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, find_stat_line_by_player_and_game, find_team_by_name, find_player_by_br_name
 from db.creators import create_game
 from helpers import time_stamp_to_minutes
+import utils
 
 base_url = 'https://www.basketball-reference.com'
 
@@ -31,9 +32,7 @@ def gather_box_scores_by_year(year):
 
 
 def gather_box_scores_by_month(year, month):
-    num_days = calendar.monthrange(year, month)[1]
-    days = [datetime.date(year, month, day) for day in range(1, num_days+1)]
-    for day in days:
+    for day in utils.iso_days_for_month(year, month):
         gather_box_scores_by_date(day.isoformat())
 
 
@@ -120,9 +119,7 @@ def scrape_box_scores_by_year(year):
         scrape_box_scores_by_month(year, i)
 
 def scrape_box_scores_by_month(year, month):
-    num_days = calendar.monthrange(year, month)[1]
-    days = [datetime.date(year, month, day) for day in range(1, num_days+1)]
-    for day in days:
+    for day in utils.iso_days_for_month(year, month):
         scrape_box_scores_by_date(day.isoformat())
 
 def scrape_box_scores_by_date(date):
@@ -130,7 +127,7 @@ def scrape_box_scores_by_date(date):
     for _, _, files in os.walk(directory):
         for filename in files:
             if filename.endswith(".html"):
-                filepath = directory+'/'+filename
+                filepath = f'{directory}/{filename}'
                 with open(filepath, 'r') as f:
                     html_text = f.read()
                     scrape_box_score(date, html_text)

@@ -35,7 +35,6 @@ def gather_predictions():
     with open(filepath, 'w') as f:
         f.write(page.text)
     gather_team_pages(tree, time_string, directory)
-    gather_base_page() #get the main page
 
 def gather_team_pages(tree, time_string, directory):
     '''

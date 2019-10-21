@@ -4,8 +4,18 @@ from workers.sites.basketball_reference import seed_players_by_date
 from workers.general import create_teams
 
 from workers.sites.fivethirtyeight import gather_predictions
+from workers.sites.swish_analytics import gather_salary_changes_by_month, scrape_salary_changes_by_month, load_salaries_on_date
 
-gather_predictions()
+date='2019-01-01'
+
+year = 2017
+for month in range(1,7):
+    #gather_salary_changes_by_month(year, month)
+    scrape_salary_changes_by_month(year, month)
+
+#load_salaries_on_date(date)
+
+#gather_predictions()
 
 for month in range(1,7):
     pass
@@ -14,7 +24,6 @@ for month in range(1,7):
 
 #scrape_box_scores_by_year(2019)
 
-#date='2019-01-01'
 #seed_players_by_date(date)
 
 #scrape_box_scores(date)
