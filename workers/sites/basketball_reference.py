@@ -1,12 +1,15 @@
-import requests
-from lxml import html
 import os
 import csv
 import calendar
 import datetime
 
-from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, find_stat_line_by_player_and_game, find_team_by_name, find_player_by_br_name
-from db.creators import create_game
+import requests
+from lxml import html
+
+from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, \
+                        find_player_by_exact_name, find_player_by_br2_name
+from db.creators import create_game, create_player_by_name
+from db.updaters import update_player_name
 from helpers import time_stamp_to_minutes
 import utils
 
@@ -26,14 +29,14 @@ def directory_from_date(date):
 # GATHERING
 
 
-def gather_box_scores_by_year(year):
-    for i in range(1, 13):
-        gather_box_scores_by_month(year, i)
+def gather_box_scores_by_season(season):
+    for date in utils.dates_in_season(season):
+        gather_box_scores_by_date(date)
 
 
 def gather_box_scores_by_month(year, month):
-    for day in utils.iso_days_for_month(year, month):
-        gather_box_scores_by_date(day.isoformat())
+    for day in utils.iso_dates_in_month(year, month):
+        gather_box_scores_by_date(day)
 
 
 def gather_box_scores_by_date(date):
@@ -79,9 +82,6 @@ def gather_box_score(date, box_score_url):
     return
 
 
-# SCRAPING
-
-
 def create_stat_dict(stat_html):
     name = stat_html.xpath('.//a')[0].text
     trs = stat_html.xpath('./td')
@@ -108,19 +108,19 @@ def create_stat_dict(stat_html):
         pts = trs[18].text
         pm = '0' if trs[19].text == None else trs[19].text
 
-        #print [fg, fga, tp, tpa, ft, fta, orb, drb, trb, ast, stl, blk, tov, pf, pts, pm]
         stat_vals = [minutes, minutes_numeric] + [int(val) for val in [
             fg, fga, tp, tpa, ft, fta, orb, drb, trb, ast, stl, blk, tov, pf, pts, pm]]
     stat_dict = dict(zip(stat_keys, stat_vals))
     return name, stat_dict
 
-def scrape_box_scores_by_year(year):
-    for i in range(1, 13):
-        scrape_box_scores_by_month(year, i)
+
+def scrape_box_scores_by_season(season):
+    for date in utils.dates_in_season(season):
+        scrape_box_scores_by_date(date)
 
 def scrape_box_scores_by_month(year, month):
-    for day in utils.iso_days_for_month(year, month):
-        scrape_box_scores_by_date(day.isoformat())
+    for day in utils.iso_dates_in_month(year, month):
+        scrape_box_scores_by_date(day)
 
 def scrape_box_scores_by_date(date):
     directory = directory_from_date(date)
@@ -215,31 +215,60 @@ def calc_fd_points(sd):
         sd['blk'] * 3 + sd['stl'] * 3 + sd['tov'] * -1.0
     return fpts
 
-def seed_players_by_date(date):
+### PLAYERS
+
+def seed_players_by_season(season, force=False):
+    for date in utils.dates_in_season(season):
+        seed_players_by_date(date, force=force)
+
+
+def seed_players_by_date(date, force=False):
+    print(f'Seeing players by date {date}')
     directory = directory_from_date(date)
     for _, _, files in os.walk(directory):
         for filename in files:
             if filename.endswith(".csv"):
                 filepath = directory+'/'+filename
-                print(filepath)
                 with open(filepath, 'r') as f:
                     reader = csv.reader(f)
                     next(reader, None)
-                    seed_players_from_reader(reader)
+                    seed_players_from_reader(reader, force=force)
 
 
-def seed_players_from_reader(reader):
+def seed_players_from_reader(reader, force=False):
     for row in reader:
         name = row[0]
         player = find_player_by_br_name(name)
         if player:
-            return
+            continue
+        player = find_player_by_br2_name(name)
+        if player:
+            continue
         # now we want to determine if we can find it in another name column
-        print(name)
+        player = find_player_by_exact_name(name)
+        if player:
+            #set this as br_name then continue
+            update_player_name('br_name', player['id'], name)
+            continue
+        #for BR, we need to see if br2_name needs to be set, meaning a close match to br_name
+        #this has to do with bad characters, like missing accents.
 
+        #if we get here and force == True, then we want to create a new player
+        if force:
+            print(f'Adding player to \'br_name\': {name}')
+            create_player_by_name('br_name', name)
 
-def gather_games(year):
-    directory = f"data2/games/{year}"
+### GAMES
+
+def gather_games_by_season(season):
+    '''
+    Gathering games by seasons. '18-19', '19-20'. We're doing this because the year
+    in the br url has to do with the year when the finals are played. We want the
+    directories to be clear about that
+    '''
+    _, end_year = season.split('-')
+    year = int(f'20{end_year}')
+    directory = f"data2/games/{season}"
     if not os.path.exists(directory):
         os.makedirs(directory)
     for month_num in range(1, 13):
@@ -253,8 +282,10 @@ def gather_games(year):
             f.write(page.text)
 
 
-def seed_games(year):
-    directory = f"data2/games/{year}"
+def seed_games_by_season(season):
+    _, end_year = season.split('-')
+    year = int(f'20{end_year}')
+    directory = f"data2/games/{season}"
     for month_num in range(1, 13):
         filepath = f"{directory}/{f'{month_num:02}'}.html"
         with open(filepath, 'r') as f:
@@ -266,7 +297,6 @@ def seed_games(year):
             for game_info in game_infos:
                 date_string = game_info[0].xpath('./a')[0].text
                 date = datetime.datetime.strptime(date_string, date_format)
-                season = f"{str(year-1)[2:]}-{str(year)[2:]}"
                 print(date)
                 away_team_name = game_info[2].xpath('./a')[0].text
                 home_team_name = game_info[4].xpath('./a')[0].text

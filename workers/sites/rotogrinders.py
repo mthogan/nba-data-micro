@@ -5,7 +5,6 @@ import csv
 import json
 import re
 
-from models.models import Team, Player, Game, StatLine, Projection
 from db.finders import  session_add, session_commit, find_site, find_stat_line_for_player_on_date, find_player_by_name, find_projection_for_player_on_date
 
 import requests
@@ -14,46 +13,16 @@ import csv
 ### GATHER
 
 def gather_projections(site_name, site_abbrv, date):
-  print(f'Getting projections for {date} from {site_name}')
-  base_url = "https://rotogrinders.com/projected-stats/nba-player.csv?site={}&date={}"
-  res = requests.get(base_url.format(site_name, date))
-  reader = csv.reader(res.text.splitlines())
-  filename = 'data/projections/roto/{}/{}.csv'.format(site_abbrv, date)
-  with open(filename, 'w') as f:
-    writer = csv.writer(f)
-    for row in reader:
-      writer.writerow(row)
+    print(f'Getting projections for {date} from {site_name}')
+    base_url = "https://rotogrinders.com/projected-stats/nba-player.csv?site={}&date={}"
+    res = requests.get(base_url.format(site_name, date))
+    reader = csv.reader(res.text.splitlines())
+    filename = 'data/projections/roto/{}/{}.csv'.format(site_abbrv, date)
+    with open(filename, 'w') as f:
+        writer = csv.writer(f)
+        for row in reader:
+            writer.writerow(row)
 
-def add_roto_players_from_projection_file(filepath):
-  '''
-    Being somewhat lazy, and for the names that don't have a match
-    we're just going to print that and handle it manually using
-    like '%LAST NAME%'
-  '''
-  with open(filepath, 'r') as f:
-    reader = csv.reader(f)
-    for row in reader:
-      name = row[0].strip()
-      player = find_player_by_name(name)
-      if not player:
-        print(name)
-      else:
-        player.rg_name = name
-        session_add(player)
-    session_commit()
-
-def add_roto_player(directory):
-  for root,dirs,files in os.walk(directory):
-    for filename in files:
-       if filename.endswith(".csv"):
-         filepath = '{}/{}'.format(directory, filename)
-         add_roto_players_from_projection_file(filepath)
-
-def add_roto_players():
-  site_abbrvs = ['fd', 'dk'] #these are the only projections we have now
-  for site_abbrv in site_abbrvs:
-    directory = 'data/projections/roto/{}'.format(site_abbrv)
-    add_roto_player(directory)
 
 def add_past_salaries(site_abbrv, date):
   '''

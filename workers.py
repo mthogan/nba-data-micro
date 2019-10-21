@@ -1,32 +1,31 @@
-from workers.sites.basketball_reference import gather_box_scores_by_month, gather_box_scores_by_date, scrape_box_scores_by_date, scrape_box_scores_by_year, gather_games, seed_games
-from workers.sites.basketball_reference import seed_players_by_date
+from workers.sites.basketball_reference import gather_box_scores_by_month, gather_box_scores_by_date, scrape_box_scores_by_date, \
+                                                scrape_box_scores_by_season, gather_games, seed_games, seed_players_by_season
 
 from workers.general import create_teams
 
 from workers.sites.fivethirtyeight import gather_predictions
 from workers.sites.swish_analytics import gather_salary_changes_by_month, scrape_salary_changes_by_month, load_salaries_on_date
 
-date='2019-01-01'
+date = '2019-01-02'
 
-year = 2017
-for month in range(1,7):
-    #gather_salary_changes_by_month(year, month)
-    scrape_salary_changes_by_month(year, month)
 
-#load_salaries_on_date(date)
+seed_players_by_season('17-18', force=True)
 
-#gather_predictions()
+#gather_salary_changes_by_month(year, month)
+#scrape_salary_changes_by_month(year, month)
 
-for month in range(1,7):
+# load_salaries_on_date(date)
+
+# gather_predictions()
+
+for month in range(1, 7):
     pass
     #scrape_box_scores_by_month(2019, month)
     #gather_box_scores_by_month(2015, month)
 
-#scrape_box_scores_by_year(2019)
 
-#seed_players_by_date(date)
 
-#scrape_box_scores(date)
+# scrape_box_scores(date)
 
 '''
 #create_teams()

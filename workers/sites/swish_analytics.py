@@ -16,13 +16,13 @@ base_url = 'https://swishanalytics.com/optimus/nba/daily-fantasy-salary-changes'
 
 valid_sites = ['fd', 'dk']
 
-def gather_salary_changes_by_year(year):
-    for i in range(1, 13):
-        gather_salary_changes_by_month(year, i)
+def gather_salary_changes_by_season(season):
+    for date in utils.dates_in_season(season):
+        gather_salary_changes_by_date(date)
 
 
 def gather_salary_changes_by_month(year, month):
-    for day in utils.iso_days_for_month(year, month):
+    for day in utils.iso_dates_in_month(year, month):
         gather_salary_changes_by_date(day)
 
 
@@ -39,7 +39,7 @@ def gather_salary_changes_by_date(date):
 
 
 def scrape_salary_changes_by_month(year, month):
-    for day in utils.iso_days_for_month(year, month):
+    for day in utils.iso_dates_in_month(year, month):
         scrape_salary_changes_by_date(day)
 
 
