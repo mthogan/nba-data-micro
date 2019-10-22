@@ -3,7 +3,7 @@ from lxml import html
 import datetime
 import os
 
-from db.finders import find_team_by_name
+from db.finders import find_team_by_name, find_all_teams
 import utils
 
 base_url = "https://projects.fivethirtyeight.com"
@@ -59,4 +59,27 @@ def gather_team_pages(tree, time_string, directory):
         with open(filepath, 'w') as f:
             f.write(page.text)
 
+def scrape_team_pages_by_date():
+    '''
+    There are three tables in the page. Current rotation, Full strength rotation, and full strength playoff rotation.
+    For this, we want to include all of them, but in different places in the csv file.
+    Name, mgp_current, mgp_full, mgp_full_playoff, opm, dpm
+    where mgp_* are json
+    '''
+    teams = find_all_teams()
+    for team in teams:
+        directory = f"{base_directory}/{team['abbrv']}"
+        filename = f"{time_string}.html"
+        filepath = f"{directory}/{filename}"
+        with open(filepath, 'r') as f:
+            tree = html.fromstring(f.read())
 
+
+def _players_by_date(date):
+    teams = find_all_teams()
+    for team in teams:
+        directory = f"{base_directory}/{team['abbrv']}"
+        filename = f"{time_string}.html"
+        filepath = f"{directory}/{filename}"
+        with open(filepath, 'r'):
+            pass

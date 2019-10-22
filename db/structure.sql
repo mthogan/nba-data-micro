@@ -16,9 +16,159 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: unaccent; Type: EXTENSION; Schema: -; Owner: -
+--
+
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION unaccent; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
+
+
+--
+-- Name: clean_differences(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.clean_differences(player_name text) RETURNS text
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	-- RETURN regexp_replace(replace(replace(replace(player_name, ' III', ''), ' Jr.', ''), ' Sr.', ''), '(III)(Sr.)(Jr.)[.,'']', '', 'g');
+ 	RETURN regexp_replace(player_name, '( II)|( III)|( IV)||( Sr\.)|( Jr\.)|[.,'']', '', 'g');
+ END; $$;
+
+
+ALTER FUNCTION public.clean_differences(player_name text) OWNER TO jackschultz;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
+
+--
+-- Name: players; Type: TABLE; Schema: public; Owner: nbauser
+--
+
+CREATE TABLE public.players (
+    id integer NOT NULL,
+    dk_name character varying(100),
+    fd_name character varying(100),
+    br_name character varying(100),
+    rg_name character varying(100),
+    current_team_id integer,
+    br2_name character varying(100),
+    fte_name character varying(100)
+);
+
+
+ALTER TABLE public.players OWNER TO nbauser;
+
+--
+-- Name: compare_all_clean_name_columns(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.compare_all_clean_name_columns(player_name text) RETURNS SETOF public.players
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN QUERY select * from players where clean_differences(dk_name) = clean_differences(player_name) or clean_differences(fd_name) = clean_differences(player_name) or clean_differences(br_name) = clean_differences(player_name) or clean_differences(br2_name) = clean_differences(player_name) or clean_differences(rg_name) = clean_differences(player_name) or clean_differences(fte_name) = clean_differences(player_name);
+ END; $$;
+
+
+ALTER FUNCTION public.compare_all_clean_name_columns(player_name text) OWNER TO jackschultz;
+
+--
+-- Name: compare_all_name_columns(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.compare_all_name_columns(player_name text) RETURNS SETOF public.players
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN QUERY select * from players where dk_name = player_name or fd_name=player_name or br_name=player_name or br2_name=player_name or rg_name=player_name or fte_name=player_name;
+ END; $$;
+
+
+ALTER FUNCTION public.compare_all_name_columns(player_name text) OWNER TO jackschultz;
+
+--
+-- Name: compare_all_name_columns_like(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.compare_all_name_columns_like(player_name text) RETURNS SETOF public.players
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN QUERY select * from players where dk_name  like '%' || player_name || '%' or
+ 											 fd_name  like '%' ||player_name || '%' or
+ 											 br_name  like '%' ||player_name || '%' or 
+ 											 br2_name like '%' ||player_name || '%' or
+ 											 rg_name  like '%' ||player_name || '%' or 
+ 											 fte_name like '%' ||player_name || '%';
+ END; $$;
+
+
+ALTER FUNCTION public.compare_all_name_columns_like(player_name text) OWNER TO jackschultz;
+
+--
+-- Name: compare_lowercase_names(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.compare_lowercase_names(player_name text) RETURNS SETOF public.players
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN QUERY select * from players where lower(dk_name) = lower(player_name) or lower(fd_name) = lower(player_name) or lower(br_name) = lower(player_name) or lower(br2_name) = lower(player_name) or lower(rg_name) = lower(player_name) or lower(fte_name) = lower(player_name);
+ END; $$;
+
+
+ALTER FUNCTION public.compare_lowercase_names(player_name text) OWNER TO jackschultz;
+
+--
+-- Name: compare_non_vowel_names(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.compare_non_vowel_names(player_name text) RETURNS SETOF public.players
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN QUERY select * from players where remove_non_ascii_and_vowels(dk_name) = remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(fd_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(br_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(br2_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(rg_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(fte_name)=remove_non_ascii_and_vowels(player_name);
+ END; $$;
+
+
+ALTER FUNCTION public.compare_non_vowel_names(player_name text) OWNER TO jackschultz;
+
+--
+-- Name: compare_unaccented_names(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.compare_unaccented_names(player_name text) RETURNS SETOF public.players
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN QUERY select * from players where unaccent(dk_name) = unaccent(player_name) or unaccent(fd_name) = unaccent(player_name) or unaccent(br_name) = unaccent(player_name) or unaccent(br2_name) = unaccent(player_name) or unaccent(rg_name) = unaccent(player_name) or unaccent(fte_name) = unaccent(player_name);
+ END; $$;
+
+
+ALTER FUNCTION public.compare_unaccented_names(player_name text) OWNER TO jackschultz;
+
+--
+-- Name: remove_non_ascii_and_vowels(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.remove_non_ascii_and_vowels(player_name text) RETURNS text
+    LANGUAGE plpgsql
+    AS $$
+ BEGIN
+ 	RETURN regexp_replace(regexp_replace(player_name, '[^[:ascii:]]', '', 'g'), '[aeiou]', '', 'gi');
+ END; $$;
+
+
+ALTER FUNCTION public.remove_non_ascii_and_vowels(player_name text) OWNER TO jackschultz;
 
 --
 -- Name: games; Type: TABLE; Schema: public; Owner: nbauser
@@ -56,25 +206,6 @@ ALTER TABLE public.games_id_seq OWNER TO nbauser;
 
 ALTER SEQUENCE public.games_id_seq OWNED BY public.games.id;
 
-
---
--- Name: players; Type: TABLE; Schema: public; Owner: nbauser
---
-
-CREATE TABLE public.players (
-    id integer NOT NULL,
-    dk_name character varying(100),
-    fd_name character varying(100),
-    br_name character varying(100),
-    rg_name character varying(100),
-    current_team_id integer,
-    br2_name character varying(100),
-    fte_name character varying(100),
-    sa_name character varying(100)
-);
-
-
-ALTER TABLE public.players OWNER TO nbauser;
 
 --
 -- Name: players_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser

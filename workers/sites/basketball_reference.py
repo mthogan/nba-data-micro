@@ -217,12 +217,12 @@ def calc_fd_points(sd):
 
 ### PLAYERS
 
-def seed_players_by_season(season, force=False):
+def load_players_by_season(season, force=False):
     for date in utils.dates_in_season(season):
-        seed_players_by_date(date, force=force)
+        load_players_by_date(date, force=force)
 
 
-def seed_players_by_date(date, force=False):
+def load_players_by_date(date, force=False):
     print(f'Seeing players by date {date}')
     directory = directory_from_date(date)
     for _, _, files in os.walk(directory):
@@ -232,31 +232,17 @@ def seed_players_by_date(date, force=False):
                 with open(filepath, 'r') as f:
                     reader = csv.reader(f)
                     next(reader, None)
-                    seed_players_from_reader(reader, force=force)
+                    load_players_from_reader(reader, force=force)
 
 
-def seed_players_from_reader(reader, force=False):
+def load_players_from_reader(reader, force=False):
     for row in reader:
         name = row[0]
-        player = find_player_by_br_name(name)
-        if player:
-            continue
-        player = find_player_by_br2_name(name)
-        if player:
-            continue
-        # now we want to determine if we can find it in another name column
-        player = find_player_by_exact_name(name)
-        if player:
-            #set this as br_name then continue
-            update_player_name('br_name', player['id'], name)
-            continue
-        #for BR, we need to see if br2_name needs to be set, meaning a close match to br_name
-        #this has to do with bad characters, like missing accents.
-
-        #if we get here and force == True, then we want to create a new player
-        if force:
-            print(f'Adding player to \'br_name\': {name}')
-            create_player_by_name('br_name', name)
+        #player = find_player_by_br_name(name)
+        #if not player:
+        #    print(name)
+        #continue
+        utils.load_players_by_name('br', name, force=force)
 
 ### GAMES
 
@@ -282,7 +268,7 @@ def gather_games_by_season(season):
             f.write(page.text)
 
 
-def seed_games_by_season(season):
+def load_games_by_season(season):
     _, end_year = season.split('-')
     year = int(f'20{end_year}')
     directory = f"data2/games/{season}"

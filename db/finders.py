@@ -4,20 +4,25 @@ from psycopg2.extensions import AsIs
 
 select_game_count_str_str = "select count(*) from games"
 select_game_by_date_and_team_str = "select * from games where date=%s and (home_team_id=%s or away_team_id=%s)"
+select_all_teams = "select * from teams"
 select_team_by_name_str = "select * from teams where name=%s"
 select_team_by_abbrv_str = "select * from teams where abbrv=%s"
 select_team_by_rg_abbrv_str = "select * from teams where rg_abbrv=%s"
 select_player_by_rg_name_str = "select * from players where rg_name=%s"
-select_player_by_br_name_str = "select * from players where br_name=%s or br2_name=%s"
+select_player_by_br_name_str = "select * from players where br_name=%s"
 select_player_by_br2_name_str = "select * from players where br2_name=%s"
 select_player_by_site_abbrv_name_str = "select * from players where %s_name=%s"
 select_stat_line_by_player_and_game_str = "select * from stat_lines where player_id=%s and game_id=%s"
 select_all_player_rg_names_str = "select rg_name from players"
 
-select_exact_player_names_str = "select id, dk_name, fd_name, br_name, br2_name, rg_name, fte_name, sa_name from players where dk_name=%s or fd_name=%s or br_name=%s or br2_name=%s or rg_name=%s or fte_name=%s or sa_name=%s"
-select_player_names_like_str = "select id, dk_name, fd_name, br_name, rg_name from players where (dk_name like %(first_name_initial)s or dk_name like %(last_name_initial)s or fd_name like %(first_name_initial)s or fd_name like %(last_name_initial)s or br_name like %(first_name_initial)s or br_name like %(last_name_initial)s or rg_name like %(first_name_initial)s or rg_name like %(last_name_initial)s)"
+select_exact_player_names_str = "select * from compare_all_name_columns(%s);"
 
-# and %(null_site_abbrv)s_name is null
+select_player_names_like_str = "select id, dk_name, fd_name, br_name, rg_name from players where (dk_name like %(first_name_initial)s or dk_name like %(last_name_initial)s or fd_name like %(first_name_initial)s or fd_name like %(last_name_initial)s or br_name like %(first_name_initial)s or br_name like %(last_name_initial)s or rg_name like %(first_name_initial)s or rg_name like %(last_name_initial)s)"
+select_clean_player_names_str = "select * from compare_all_clean_name_columns(%s)"
+select_lowercase_player_names_str = "select * from compare_lowercase_names(%s)"
+
+select_unaccented_player_names_str = "select * from compare_unaccented_names(%s)"
+
 
 team_columns = ['id', 'name', 'abbrv', 'rg_abbrv', 'br_abbrv']
 player_columns = ['id', 'dk_name', 'fd_name',
@@ -35,6 +40,12 @@ def find_game_by_date_and_team(date, team_id):
     if not game_info:
         return None
     return dict(zip(game_columns, game_info))
+
+
+def find_all_teams():
+    cursor.execute(select_all_teams)
+    teams = cursor.fetchall()
+    return [dict(zip(team_columns, team)) for team in teams]
 
 
 def find_team_by_name(name):
@@ -77,12 +88,14 @@ def find_player_by_br_name(name):
         return None
     return dict(zip(player_columns, player_info))
 
+
 def find_player_by_br2_name(name):
     cursor.execute(select_player_by_br2_name_str, (name,))
     player_info = cursor.fetchone()
     if not player_info:
         return None
     return dict(zip(player_columns, player_info))
+
 
 def find_stat_line_by_player_and_game(player_id, game_id):
     cursor.execute(select_stat_line_by_player_and_game_str,
@@ -103,8 +116,40 @@ def find_player_by_exact_name(name):
     '''
     Goal here is to see if we can find a player where one of the name columns is an exact match.
     '''
-    name_tuple = tuple([name] * 7)
-    cursor.execute(select_exact_player_names_str, name_tuple)
+    cursor.execute(select_exact_player_names_str, (name,))
+    player_info = cursor.fetchone()
+    if not player_info:
+        return None
+    return dict(zip(player_columns, player_info))
+
+
+def find_player_by_clean_name(name):
+    '''
+    Trying to find a player by a clean name, meaning no Jr., Sr., III, or dots like J.J
+    '''
+    cursor.execute(select_clean_player_names_str, (name,))
+    player_info = cursor.fetchone()
+    if not player_info:
+        return None
+    return dict(zip(player_columns, player_info))
+
+
+def find_player_by_unaccented_name(name):
+    '''
+    Trying to find a player by a clean name, meaning no Jr., Sr., III, or dots like J.J
+    '''
+    cursor.execute(select_unaccented_player_names_str, (name,))
+    player_info = cursor.fetchone()
+    if not player_info:
+        return None
+    return dict(zip(player_columns, player_info))
+
+
+def find_player_by_lowercase_name(name):
+    '''
+    Trying to find a player by a lowercase name, so Mccaw isn't lost
+    '''
+    cursor.execute(select_lowercase_player_names_str, (name,))
     player_info = cursor.fetchone()
     if not player_info:
         return None

@@ -1,11 +1,14 @@
-import requests
 import json
 import re
 import datetime
 import calendar
 import os
 
+import requests
 from lxml import html
+
+from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name, find_player_by_clean_name, \
+                            find_player_by_unaccented_name, find_player_by_lowercase_name
 
 import utils
 import helpers
@@ -68,16 +71,44 @@ def scrape_salary_changes_by_date(date):
                 json.dump(data, outfile)
 
 
+def swish_analytics_files_on_date(date):
+    season = helpers.season_from_date(date)
+    directory = f'{base_directory}/{season}/{date}'
+    for site in valid_sites:
+        filename = f'{site}.json'
+        filepath = f'{directory}/{filename}'
+        yield filepath
+
 def load_salaries_on_date(date):
     season = helpers.season_from_date(date)
     directory = f'{base_directory}/{season}/{date}'
     for site in valid_sites:
-            filename = f'{site}.json'
-            filepath = f'{directory}/{filename}'
-            with open(filepath, 'r') as f:
-                player_salaries = json.load(f)
-                print(player_salaries)
-                for player in player_salaries:
-                    player_name = player['player_name']
-                    salary = int(player['salary'].replace(',',''))
-                    print(f'{player_name}: {salary}')
+        filename = f'{site}.json'
+        filepath = f'{directory}/{filename}'
+        with open(filepath, 'r') as f:
+            player_salaries = json.load(f)
+            print(player_salaries)
+            for player in player_salaries:
+                player_name = player['player_name']
+                salary = int(player['salary'].replace(',',''))
+                print(f'{player_name}: {salary}')
+
+def load_players_in_month(year, month):
+    for day in utils.iso_dates_in_month(year, month):
+        load_players_on_date(day)
+
+def load_players_on_date(date):
+    '''
+    We're going through the names on the date specified. For the names, SA uses
+    the names per site. So if the name is different in FD and DK, it's different here.
+    This means no sa_name, and when loading here, we want to add them to fd and dk.
+    '''
+    for filepath in swish_analytics_files_on_date(date):
+        print(filepath)
+        site_abbrv = filepath.split('/')[-1].replace('.json','')
+        with open(filepath, 'r') as f:
+            player_salaries = json.load(f)
+            for player in player_salaries:
+                name = player['player_name']
+                utils.load_players_by_name(site_abbrv, name)
+
