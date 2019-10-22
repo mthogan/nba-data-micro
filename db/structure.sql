@@ -59,9 +59,8 @@ CREATE TABLE public.players (
     fd_name character varying(100),
     br_name character varying(100),
     rg_name character varying(100),
-    current_team_id integer,
-    br2_name character varying(100),
-    fte_name character varying(100)
+    fte_name character varying(100),
+    alt_name character varying(100)
 );
 
 
@@ -245,12 +244,53 @@ CREATE TABLE public.stat_lines (
     dk_points numeric,
     fd_points numeric,
     stats jsonb,
-    date date,
     minutes numeric DEFAULT 0.0
 );
 
 
 ALTER TABLE public.stat_lines OWNER TO nbauser;
+
+--
+-- Name: teams; Type: TABLE; Schema: public; Owner: nbauser
+--
+
+CREATE TABLE public.teams (
+    id integer NOT NULL,
+    name character varying(50) NOT NULL,
+    abbrv character varying(10) NOT NULL,
+    rg_abbrv character varying(10) NOT NULL,
+    br_abbrv character varying(10)
+);
+
+
+ALTER TABLE public.teams OWNER TO nbauser;
+
+--
+-- Name: stat_line_points; Type: VIEW; Schema: public; Owner: jackschultz
+--
+
+CREATE VIEW public.stat_line_points AS
+ SELECT p.br_name,
+    t.abbrv,
+    g.date,
+    round(sl.minutes, 2) AS minutes,
+    sl.dk_positions,
+    sl.dk_salary,
+    sl.dk_points,
+    round((sl.dk_points * (36.0 / sl.minutes)), 2) AS dkpp36,
+    sl.fd_salary,
+    sl.fd_positions,
+    sl.fd_points,
+    round((sl.fd_points * (36.0 / sl.minutes)), 2) AS fdpp36,
+    p.id AS player_id
+   FROM public.stat_lines sl,
+    public.games g,
+    public.players p,
+    public.teams t
+  WHERE ((sl.game_id = g.id) AND (sl.player_id = p.id) AND (sl.team_id = t.id));
+
+
+ALTER TABLE public.stat_line_points OWNER TO jackschultz;
 
 --
 -- Name: stat_lines_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
@@ -273,21 +313,6 @@ ALTER TABLE public.stat_lines_id_seq OWNER TO nbauser;
 
 ALTER SEQUENCE public.stat_lines_id_seq OWNED BY public.stat_lines.id;
 
-
---
--- Name: teams; Type: TABLE; Schema: public; Owner: nbauser
---
-
-CREATE TABLE public.teams (
-    id integer NOT NULL,
-    name character varying(50) NOT NULL,
-    abbrv character varying(10) NOT NULL,
-    rg_abbrv character varying(10) NOT NULL,
-    br_abbrv character varying(10)
-);
-
-
-ALTER TABLE public.teams OWNER TO nbauser;
 
 --
 -- Name: teams_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
@@ -435,31 +460,10 @@ CREATE INDEX players_br_name_idx ON public.players USING btree (br_name);
 
 
 --
--- Name: stat_lines_date_idx; Type: INDEX; Schema: public; Owner: nbauser
---
-
-CREATE INDEX stat_lines_date_idx ON public.stat_lines USING btree (date);
-
-
---
 -- Name: stat_lines_minutes_idx; Type: INDEX; Schema: public; Owner: nbauser
 --
 
 CREATE INDEX stat_lines_minutes_idx ON public.stat_lines USING btree (minutes);
-
-
---
--- Name: stat_lines_player_id_date_idx; Type: INDEX; Schema: public; Owner: nbauser
---
-
-CREATE INDEX stat_lines_player_id_date_idx ON public.stat_lines USING btree (player_id, date);
-
-
---
--- Name: stat_lines_player_id_date_minutes_idx; Type: INDEX; Schema: public; Owner: nbauser
---
-
-CREATE INDEX stat_lines_player_id_date_minutes_idx ON public.stat_lines USING btree (player_id, date, minutes);
 
 
 --
@@ -483,14 +487,6 @@ ALTER TABLE ONLY public.games
 
 ALTER TABLE ONLY public.games
     ADD CONSTRAINT games_home_team_id_fkey FOREIGN KEY (home_team_id) REFERENCES public.teams(id);
-
-
---
--- Name: players players_current_team_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: nbauser
---
-
-ALTER TABLE ONLY public.players
-    ADD CONSTRAINT players_current_team_id_fkey FOREIGN KEY (current_team_id) REFERENCES public.teams(id);
 
 
 --
