@@ -13,18 +13,19 @@ from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name
 import utils
 import helpers
 
-base_directory = 'data2/salaries/swishanalytics'
+base_directory = 'data2/salaries/swishanalytics2'
 
 base_url = 'https://swishanalytics.com/optimus/nba/daily-fantasy-salary-changes'
 
 valid_sites = ['fd', 'dk']
 
-def gather_salary_changes_by_season(season):
+
+def gather_salary_changes_for_season(season):
     for date in utils.dates_in_season(season):
         gather_salary_changes_by_date(date)
 
 
-def gather_salary_changes_by_month(year, month):
+def gather_salary_changes_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         gather_salary_changes_by_date(day)
 
@@ -33,28 +34,40 @@ def gather_salary_changes_by_date(date):
     print(f'Getting salary differences from SA for {date}')
     page = requests.get(base_url, params={'date': date})
     season = helpers.season_from_date(date)
-    directory = f'{base_directory}/{season}/{date}'
+    directory = f'{base_directory}/{season}/full'
     utils.ensure_directory_exists(directory)
-    filename = 'full.html'
+    filename = f'{date}.html'
     filepath = f'{directory}/{filename}'
     with open(filepath, 'w') as f:
         f.write(page.text)
 
 
-def scrape_salary_changes_by_month(year, month):
+def _get_full_filepath_by_date(date):
+    season = helpers.season_from_date(date)
+    directory = f'{base_directory}/{season}/full'
+    return f'{directory}/{date}.html'
+
+def _get_site_filepath_by_date(site_abbrv, date):
+    season = helpers.season_from_date(date)
+    directory = f'{base_directory}/{season}/{site_abbrv}'
+    utils.ensure_directory_exists(directory)
+    return f'{directory}/{date}.json'
+    
+def scrape_salary_changes_for_season(season):
+    for date in utils.dates_in_season(season):
+        scrape_salary_changes_by_date(date)
+
+
+def scrape_salary_changes_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         scrape_salary_changes_by_date(day)
-
 
 def scrape_salary_changes_by_date(date):
     '''
     Read full.html and spit into json
     '''
     print(f'Scraping salary differences from SA for {date}')
-    season = helpers.season_from_date(date)
-    directory = f'{base_directory}/{season}/{date}'
-    full_filename = 'full.html'
-    full_filepath = f'{directory}/{full_filename}'
+    full_filepath = _get_full_filepath_by_date(date)
     if not os.path.exists(full_filepath):
         print(f'No full.html for {date}')
         return
@@ -64,26 +77,25 @@ def scrape_salary_changes_by_date(date):
             json_re = r'this.players_' + re.escape(site) + ' = (.*?);'
             data_string = re.search(json_re, html_text).group(1)
             data = json.loads(data_string)
-            filename = f'{site}.json'
-            filepath = f'{directory}/{filename}'
-            print(filename)
+            filepath = _get_site_filepath_by_date(site, date)
+            print(filepath)
             with open(filepath, 'w') as outfile:
                 json.dump(data, outfile)
 
 
 def swish_analytics_files_on_date(date):
     season = helpers.season_from_date(date)
-    directory = f'{base_directory}/{season}/{date}'
     for site in valid_sites:
-        filename = f'{site}.json'
+        directory = f'{base_directory}/{season}/{site}'
+        filename = f'{date}.json'
         filepath = f'{directory}/{filename}'
         yield filepath
 
 def load_salaries_on_date(date):
     season = helpers.season_from_date(date)
-    directory = f'{base_directory}/{season}/{date}'
+    directory = f'{base_directory}/{season}/full'
     for site in valid_sites:
-        filename = f'{site}.json'
+        filename = f'{date}.json'
         filepath = f'{directory}/{filename}'
         with open(filepath, 'r') as f:
             player_salaries = json.load(f)

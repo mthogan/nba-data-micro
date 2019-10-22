@@ -7,10 +7,12 @@ import requests
 from lxml import html
 
 from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, \
-                        find_player_by_exact_name, find_player_by_br2_name
-from db.creators import create_game, create_player_by_name
+                        find_player_by_exact_name, \
+                        find_team_by_site_abbrv, find_stat_line_by_player_and_game
+
+from db.creators import create_game, create_player_by_name, create_stat_line_with_stats
 from db.updaters import update_player_name
-from helpers import time_stamp_to_minutes
+from helpers import timestamp_to_minutes
 import utils
 
 base_url = 'https://www.basketball-reference.com'
@@ -29,12 +31,12 @@ def directory_from_date(date):
 # GATHERING
 
 
-def gather_box_scores_by_season(season):
+def gather_box_scores_for_season(season):
     for date in utils.dates_in_season(season):
         gather_box_scores_by_date(date)
 
 
-def gather_box_scores_by_month(year, month):
+def gather_box_scores_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         gather_box_scores_by_date(day)
 
@@ -90,7 +92,7 @@ def create_stat_dict(stat_html):
         stat_vals = [0] * 18
     else:
         minutes = trs[0].text
-        minutes_numeric = time_stamp_to_minutes(minutes)
+        minutes_numeric = timestamp_to_minutes(minutes)
         fg = trs[1].text
         fga = trs[2].text
         tp = trs[4].text
@@ -114,11 +116,11 @@ def create_stat_dict(stat_html):
     return name, stat_dict
 
 
-def scrape_box_scores_by_season(season):
+def scrape_box_scores_for_season(season):
     for date in utils.dates_in_season(season):
         scrape_box_scores_by_date(date)
 
-def scrape_box_scores_by_month(year, month):
+def scrape_box_scores_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         scrape_box_scores_by_date(day)
 
@@ -183,18 +185,6 @@ def save_stat_line(name, team, stat_dict):
     stat_dict['name'] = name
     stat_dict['team'] = team['br_abbrv']
     return stat_dict
-    # print(stat_dict)
-    #player = find_player_by_br_name(name)
-    #print("Adding stats for", player['br_name'])
-    #stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
-    # print(stat_line)
-    # if not stat_line:
-    #    print('No stat_line')
-    #stat_line.stats = stat_dict
-    #stat_line.dk_points = dk_points
-    #stat_line.fd_points = fd_points
-    # session.add(stat_line)
-    # session.commit()
 
 
 def calc_dk_points(sd):
@@ -215,15 +205,10 @@ def calc_fd_points(sd):
         sd['blk'] * 3 + sd['stl'] * 3 + sd['tov'] * -1.0
     return fpts
 
-### PLAYERS
 
-def load_players_by_season(season, force=False):
-    for date in utils.dates_in_season(season):
-        load_players_by_date(date, force=force)
+### Stat Lines
 
-
-def load_players_by_date(date, force=False):
-    print(f'Seeing players by date {date}')
+def loop_stat_lines_on_date(date):
     directory = directory_from_date(date)
     for _, _, files in os.walk(directory):
         for filename in files:
@@ -232,21 +217,52 @@ def load_players_by_date(date, force=False):
                 with open(filepath, 'r') as f:
                     reader = csv.reader(f)
                     next(reader, None)
-                    load_players_from_reader(reader, force=force)
+                    for row in reader:
+                        yield row
+                    #load_players_from_reader(reader, force=force)
+
+def load_stat_lines_for_season(season):
+    for date in utils.dates_in_season(season):
+        load_stat_lines_on_date(date)
+
+def load_stat_lines_for_month(year, month):
+    for day in utils.iso_dates_in_month(year, month):
+        load_stat_lines_on_date(day)
+
+def load_stat_lines_on_date(date):
+    print(f'Loading stat_lines on {date}')
+    for stat_line in loop_stat_lines_on_date(date):
+        stat_dict = dict(zip(stat_csv_keys, stat_line))
+        player_name = stat_dict.pop('name')
+        player = find_player_by_br_name(player_name)
+        team_abbrv = stat_dict.pop('team')
+        team = find_team_by_site_abbrv('br', team_abbrv)
+        minutes = stat_dict.pop('minutes_numeric')
+        game = find_game_by_date_and_team(date, team['id'])
+        stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
+        dk_points = stat_dict.pop('dk_points')
+        fd_points = stat_dict.pop('fd_points')
+        if not stat_line:
+            #create the stat_line
+            create_stat_line_with_stats(player['id'], team['id'], game['id'], dk_points, fd_points, stat_dict, minutes)
 
 
-def load_players_from_reader(reader, force=False):
-    for row in reader:
-        name = row[0]
-        #player = find_player_by_br_name(name)
-        #if not player:
-        #    print(name)
-        #continue
+### PLAYERS
+
+def load_players_for_season(season, force=False):
+    for date in utils.dates_in_season(season):
+        load_players_on_date(date, force=force)
+
+
+def load_players_on_date(date, force=False):
+    print(f'Seeing players by date {date}')
+    for stat_line in loop_stat_lines_on_date(date):
+        name = stat_line[0]
         utils.load_players_by_name('br', name, force=force)
 
 ### GAMES
 
-def gather_games_by_season(season):
+def gather_games_for_season(season):
     '''
     Gathering games by seasons. '18-19', '19-20'. We're doing this because the year
     in the br url has to do with the year when the finals are played. We want the
@@ -268,7 +284,7 @@ def gather_games_by_season(season):
             f.write(page.text)
 
 
-def load_games_by_season(season):
+def load_games_for_season(season):
     _, end_year = season.split('-')
     year = int(f'20{end_year}')
     directory = f"data2/games/{season}"

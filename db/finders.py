@@ -4,13 +4,14 @@ from psycopg2.extensions import AsIs
 
 select_game_count_str_str = "select count(*) from games"
 select_game_by_date_and_team_str = "select * from games where date=%s and (home_team_id=%s or away_team_id=%s)"
+
 select_all_teams = "select * from teams"
 select_team_by_name_str = "select * from teams where name=%s"
 select_team_by_abbrv_str = "select * from teams where abbrv=%s"
-select_team_by_rg_abbrv_str = "select * from teams where rg_abbrv=%s"
+select_team_by_site_abbrv_column_str = "select * from teams where %s_abbrv=%%s"
+
 select_player_by_rg_name_str = "select * from players where rg_name=%s"
 select_player_by_br_name_str = "select * from players where br_name=%s"
-select_player_by_br2_name_str = "select * from players where br2_name=%s"
 select_player_by_site_abbrv_name_str = "select * from players where %s_name=%s"
 select_stat_line_by_player_and_game_str = "select * from stat_lines where player_id=%s and game_id=%s"
 select_all_player_rg_names_str = "select rg_name from players"
@@ -55,14 +56,13 @@ def find_team_by_name(name):
         return None
     return dict(zip(team_columns, team_info))
 
-
-def find_team_by_rg_abbrv(rg_abbrv):
-    cursor.execute(select_team_by_rg_abbrv_str, (rg_abbrv,))
+def find_team_by_site_abbrv(site_abbrv, name_abbrv):
+    select_team_by_site_abbrv_str = select_team_by_site_abbrv_column_str % site_abbrv
+    cursor.execute(select_team_by_site_abbrv_str, (name_abbrv,))
     team_info = cursor.fetchone()
     if not team_info:
         return None
     return dict(zip(team_columns, team_info))
-
 
 def find_player_by_site_abbrv_name(site_abbrv, name):
     cursor.execute(select_player_by_site_abbrv_name_str,
@@ -82,15 +82,7 @@ def find_player_by_rg_name(name):
 
 
 def find_player_by_br_name(name):
-    cursor.execute(select_player_by_br_name_str, (name, name,))
-    player_info = cursor.fetchone()
-    if not player_info:
-        return None
-    return dict(zip(player_columns, player_info))
-
-
-def find_player_by_br2_name(name):
-    cursor.execute(select_player_by_br2_name_str, (name,))
+    cursor.execute(select_player_by_br_name_str, (name,))
     player_info = cursor.fetchone()
     if not player_info:
         return None

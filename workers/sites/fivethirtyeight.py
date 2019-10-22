@@ -10,6 +10,7 @@ base_url = "https://projects.fivethirtyeight.com"
 base_extention = '2020-nba-predictions/'
 base_directory = "data2/fivethirtyeight"
 
+table_headings = ['full_name', 'small_name', 'min_pg', 'min_sg', 'min_sf', 'min_pf', 'min_c', 'total_min', 'vs_full_strength', 'rtg_off', 'rtg_def']
 
 def gather_predictions():
     '''
@@ -59,7 +60,7 @@ def gather_team_pages(tree, time_string, directory):
         with open(filepath, 'w') as f:
             f.write(page.text)
 
-def scrape_team_pages_by_date():
+def scrape_predictions():
     '''
     There are three tables in the page. Current rotation, Full strength rotation, and full strength playoff rotation.
     For this, we want to include all of them, but in different places in the csv file.
@@ -69,17 +70,22 @@ def scrape_team_pages_by_date():
     teams = find_all_teams()
     for team in teams:
         directory = f"{base_directory}/{team['abbrv']}"
-        filename = f"{time_string}.html"
-        filepath = f"{directory}/{filename}"
-        with open(filepath, 'r') as f:
-            tree = html.fromstring(f.read())
+        for _, _, files in os.walk(directory):
+            for filename in files:
+                if filename.endswith(".html"):
+                    filepath = f'{directory}/{filename}'
+                    with open(filepath, 'r') as f:
+                        tree = html.fromstring(f.read())
+                        scrape_player_information_from_tree(tree, filepath)
 
-
-def _players_by_date(date):
-    teams = find_all_teams()
-    for team in teams:
-        directory = f"{base_directory}/{team['abbrv']}"
-        filename = f"{time_string}.html"
-        filepath = f"{directory}/{filename}"
-        with open(filepath, 'r'):
-            pass
+def scrape_player_information_from_tree(tree, filepath):
+    csv_filepath = filepath.replace('.html', '.csv')
+    labels = ['current', 'fs-reg', 'fs-playoff']
+    for label in labels:
+        #print(f'//*[@id="{label}"]/table/tbody/tr')
+        player_rows = tree.xpath(f'//*[@id="{label}"]/table/tbody/tr[not(contains(@class, "overall"))]')
+        for row in player_rows:
+            player_values = []
+            for td in row.xpath('td[not(contains(@class, "bar")) and @class]'):
+                player_values.append(td.text_content())
+            print(player_values)
