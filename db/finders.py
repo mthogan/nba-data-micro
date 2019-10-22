@@ -1,7 +1,6 @@
 from db.db import conn, cursor
 from psycopg2.extensions import AsIs
 
-
 select_game_count_str_str = "select count(*) from games"
 select_game_by_date_and_team_str = "select * from games where date=%s and (home_team_id=%s or away_team_id=%s)"
 
@@ -13,26 +12,22 @@ select_team_by_site_abbrv_column_str = "select * from teams where %s_abbrv=%%s"
 select_player_by_rg_name_str = "select * from players where rg_name=%s"
 select_player_by_br_name_str = "select * from players where br_name=%s"
 select_player_by_site_abbrv_name_str = "select * from players where %s_name=%s"
-select_stat_line_by_player_and_game_str = "select * from stat_lines where player_id=%s and game_id=%s"
 select_all_player_rg_names_str = "select rg_name from players"
-
-select_exact_player_names_str = "select * from compare_all_name_columns(%s);"
-
+select_exact_player_names_str = "select * from compare_exact_name_columns(%s);"
 select_player_names_like_str = "select id, dk_name, fd_name, br_name, rg_name from players where (dk_name like %(first_name_initial)s or dk_name like %(last_name_initial)s or fd_name like %(first_name_initial)s or fd_name like %(last_name_initial)s or br_name like %(first_name_initial)s or br_name like %(last_name_initial)s or rg_name like %(first_name_initial)s or rg_name like %(last_name_initial)s)"
-select_clean_player_names_str = "select * from compare_all_clean_name_columns(%s)"
+select_clean_player_names_str = "select * from compare_exact_clean_name_columns(%s)"
 select_lowercase_player_names_str = "select * from compare_lowercase_names(%s)"
-
 select_unaccented_player_names_str = "select * from compare_unaccented_names(%s)"
 
+select_stat_line_by_player_and_game_str = "select * from stat_lines where player_id=%s and game_id=%s"
 
 team_columns = ['id', 'name', 'abbrv', 'rg_abbrv', 'br_abbrv']
 player_columns = ['id', 'dk_name', 'fd_name',
                   'br_name', 'rg_name', 'current_team_id', 'fte_name']
+player_name_columns = ['id', 'dk', 'fd', 'br', 'rg']
 game_columns = ['id', 'date', 'home_team_id', 'away_team_id', 'season']
 stat_line_columns = ['id', 'player_id', 'team_id', 'game_id', 'dk_positions',
                      'fd_positions', 'dk_salary', 'fd_salary', 'dk_points', 'fd_points', 'stats']
-
-player_name_columns = ['id', 'dk', 'fd', 'br', 'rg']
 
 
 def find_game_by_date_and_team(date, team_id):
@@ -56,6 +51,7 @@ def find_team_by_name(name):
         return None
     return dict(zip(team_columns, team_info))
 
+
 def find_team_by_site_abbrv(site_abbrv, name_abbrv):
     select_team_by_site_abbrv_str = select_team_by_site_abbrv_column_str % site_abbrv
     cursor.execute(select_team_by_site_abbrv_str, (name_abbrv,))
@@ -63,6 +59,7 @@ def find_team_by_site_abbrv(site_abbrv, name_abbrv):
     if not team_info:
         return None
     return dict(zip(team_columns, team_info))
+
 
 def find_player_by_site_abbrv_name(site_abbrv, name):
     cursor.execute(select_player_by_site_abbrv_name_str,
@@ -146,18 +143,3 @@ def find_player_by_lowercase_name(name):
     if not player_info:
         return None
     return dict(zip(player_columns, player_info))
-
-
-def find_player_names_like_query(null_site_abbrv, name):
-    '''
-    Goal is to find players with names like the first initial or last name,
-    where the name doesn't exist in the site_abbrv column.
-    Will create error if name is None or no space, which is ok, unless it's Nene.
-    '''
-    first_name_initial = f"{name[0]}%"
-    last_name_initial = f"{name.split(' ')[1][0]}%"
-    cursor.execute(select_player_names_like_str, {'first_name_initial': first_name_initial,
-                                                  'last_name_initial': last_name_initial, 'null_site_abbrv': AsIs(null_site_abbrv)})
-    return cursor.query
-    players_info = cursor.fetchall()
-    return [dict(zip(player_name_columns, player_info)) for player_info in players_info]

@@ -8,7 +8,7 @@ import requests
 from lxml import html
 
 from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name, find_player_by_clean_name, \
-                            find_player_by_unaccented_name, find_player_by_lowercase_name
+    find_player_by_unaccented_name, find_player_by_lowercase_name
 
 import utils
 import helpers
@@ -47,12 +47,14 @@ def _get_full_filepath_by_date(date):
     directory = f'{base_directory}/{season}/full'
     return f'{directory}/{date}.html'
 
+
 def _get_site_filepath_by_date(site_abbrv, date):
     season = helpers.season_from_date(date)
     directory = f'{base_directory}/{season}/{site_abbrv}'
     utils.ensure_directory_exists(directory)
     return f'{directory}/{date}.json'
-    
+
+
 def scrape_salary_changes_for_season(season):
     for date in utils.dates_in_season(season):
         scrape_salary_changes_by_date(date)
@@ -61,6 +63,7 @@ def scrape_salary_changes_for_season(season):
 def scrape_salary_changes_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         scrape_salary_changes_by_date(day)
+
 
 def scrape_salary_changes_by_date(date):
     '''
@@ -91,6 +94,7 @@ def swish_analytics_files_on_date(date):
         filepath = f'{directory}/{filename}'
         yield filepath
 
+
 def load_salaries_on_date(date):
     season = helpers.season_from_date(date)
     directory = f'{base_directory}/{season}/full'
@@ -102,12 +106,14 @@ def load_salaries_on_date(date):
             print(player_salaries)
             for player in player_salaries:
                 player_name = player['player_name']
-                salary = int(player['salary'].replace(',',''))
+                salary = int(player['salary'].replace(',', ''))
                 print(f'{player_name}: {salary}')
+
 
 def load_players_in_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         load_players_on_date(day)
+
 
 def load_players_on_date(date):
     '''
@@ -117,10 +123,9 @@ def load_players_on_date(date):
     '''
     for filepath in swish_analytics_files_on_date(date):
         print(filepath)
-        site_abbrv = filepath.split('/')[-1].replace('.json','')
+        site_abbrv = filepath.split('/')[-1].replace('.json', '')
         with open(filepath, 'r') as f:
             player_salaries = json.load(f)
             for player in player_salaries:
                 name = player['player_name']
                 utils.load_players_by_name(site_abbrv, name)
-

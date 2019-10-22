@@ -7,8 +7,8 @@ import requests
 from lxml import html
 
 from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, \
-                        find_player_by_exact_name, \
-                        find_team_by_site_abbrv, find_stat_line_by_player_and_game
+    find_player_by_exact_name, \
+    find_team_by_site_abbrv, find_stat_line_by_player_and_game
 
 from db.creators import create_game, create_player_by_name, create_stat_line_with_stats
 from db.updaters import update_player_name
@@ -120,9 +120,11 @@ def scrape_box_scores_for_season(season):
     for date in utils.dates_in_season(season):
         scrape_box_scores_by_date(date)
 
+
 def scrape_box_scores_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         scrape_box_scores_by_date(day)
+
 
 def scrape_box_scores_by_date(date):
     directory = directory_from_date(date)
@@ -206,7 +208,7 @@ def calc_fd_points(sd):
     return fpts
 
 
-### Stat Lines
+# Stat Lines
 
 def loop_stat_lines_on_date(date):
     directory = directory_from_date(date)
@@ -221,13 +223,16 @@ def loop_stat_lines_on_date(date):
                         yield row
                     #load_players_from_reader(reader, force=force)
 
+
 def load_stat_lines_for_season(season):
     for date in utils.dates_in_season(season):
         load_stat_lines_on_date(date)
 
+
 def load_stat_lines_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
         load_stat_lines_on_date(day)
+
 
 def load_stat_lines_on_date(date):
     print(f'Loading stat_lines on {date}')
@@ -243,11 +248,12 @@ def load_stat_lines_on_date(date):
         dk_points = stat_dict.pop('dk_points')
         fd_points = stat_dict.pop('fd_points')
         if not stat_line:
-            #create the stat_line
-            create_stat_line_with_stats(player['id'], team['id'], game['id'], dk_points, fd_points, stat_dict, minutes)
+            # create the stat_line
+            create_stat_line_with_stats(
+                player['id'], team['id'], game['id'], dk_points, fd_points, stat_dict, minutes)
 
 
-### PLAYERS
+# PLAYERS
 
 def load_players_for_season(season, force=False):
     for date in utils.dates_in_season(season):
@@ -260,7 +266,8 @@ def load_players_on_date(date, force=False):
         name = stat_line[0]
         utils.load_players_by_name('br', name, force=force)
 
-### GAMES
+# GAMES
+
 
 def gather_games_for_season(season):
     '''

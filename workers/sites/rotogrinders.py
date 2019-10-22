@@ -5,7 +5,9 @@ import csv
 import json
 import re
 
-#from db.finders import  find_site, find_stat_line_for_player_on_date, find_player_by_name, find_projection_for_player_on_date
+from db.finders import find_stat_line_by_player_and_game, find_player_by_exact_name, \
+    find_team_by_site_abbrv, find_game_by_date_and_team
+from db.updaters import update_stat_line_position_salary
 import utils
 import helpers
 
@@ -70,9 +72,15 @@ def gather_projections_on_date(date, session=False):
             f.write(page.text)  # throw the csv file there
 
 
-def load_player_for_month(year, month):
+def load_players_for_season(season):
+    for date in utils.dates_in_season(season):
+        load_players_on_date(date)
+
+
+def load_players_for_month(year, month):
     for date in utils.iso_dates_in_month(year, month):
         load_players_on_date(date)
+
 
 def load_players_on_date(date):
     '''
@@ -87,6 +95,41 @@ def load_players_on_date(date):
             for row in reader:
                 name = row[0].strip()
                 utils.load_players_by_name('rg', name)
+
+
+def load_salaries_for_season(season):
+    for date in utils.dates_in_season(season):
+        load_salaries_on_date(date)
+
+
+def load_salaries_for_month(year, month):
+    for date in utils.iso_dates_in_month(year, month):
+        load_salaries_on_date(date)
+
+
+def load_salaries_on_date(date):
+    print(f'Loading salaries from RG on {date}')
+    for _, site_abbrv in site_infos:
+        filepath = _get_filepath_from_date(date, site_abbrv)
+        with open(filepath, 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                update_stat_line(date, site_abbrv, row)
+
+
+def update_stat_line(date, site_abbrv, row):
+    name, sal, team_abbrv, pos = row[:4]
+    player = find_player_by_exact_name(name.strip())
+    team = find_team_by_site_abbrv('rg', team_abbrv)
+    game = find_game_by_date_and_team(date, team['id'])
+    if not player or not game:
+        print(f'No player {name} or game on {date}')
+        return
+        import pdb
+        pdb.set_trace()
+    stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
+    if stat_line:
+        update_stat_line_position_salary(site_abbrv, stat_line['id'], pos, sal)
 
 
 def add_past_salaries(site_abbrv, date):

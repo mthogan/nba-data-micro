@@ -1,10 +1,15 @@
-from workers.sites.rotogrinders import load_player_for_month
+from workers.sites.rotogrinders import load_salaries_for_season, load_salaries_for_month
 
 
-date = '2019-01-01'
+date = '2019-01-03'
 
 
+season = '16-17'
+load_salaries_for_season(season)
+
+'''
+months = [2,3,4,5,6]
 year = 2018
-months = [10,11,12]
 for month in months:
-    load_player_for_month(year, month)
+    load_salaries_for_month(year, month)
+'''

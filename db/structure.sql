@@ -67,51 +67,61 @@ CREATE TABLE public.players (
 ALTER TABLE public.players OWNER TO nbauser;
 
 --
--- Name: compare_all_clean_name_columns(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+-- Name: compare_exact_clean_name_columns(text); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
-CREATE FUNCTION public.compare_all_clean_name_columns(player_name text) RETURNS SETOF public.players
+CREATE FUNCTION public.compare_exact_clean_name_columns(player_name text) RETURNS SETOF public.players
     LANGUAGE plpgsql
     AS $$
  BEGIN
- 	RETURN QUERY select * from players where clean_differences(dk_name) = clean_differences(player_name) or clean_differences(fd_name) = clean_differences(player_name) or clean_differences(br_name) = clean_differences(player_name) or clean_differences(br2_name) = clean_differences(player_name) or clean_differences(rg_name) = clean_differences(player_name) or clean_differences(fte_name) = clean_differences(player_name);
+ 	RETURN QUERY select * from players where clean_differences(dk_name) = clean_differences(player_name)  or
+ 											 clean_differences(fd_name) = clean_differences(player_name)  or
+ 											 clean_differences(br_name) = clean_differences(player_name)  or
+ 											 clean_differences(rg_name) = clean_differences(player_name)  or
+ 											 clean_differences(fte_name) = clean_differences(player_name) or
+ 											 clean_differences(alt_name) = clean_differences(player_name) ;
  END; $$;
 
 
-ALTER FUNCTION public.compare_all_clean_name_columns(player_name text) OWNER TO jackschultz;
+ALTER FUNCTION public.compare_exact_clean_name_columns(player_name text) OWNER TO jackschultz;
 
 --
--- Name: compare_all_name_columns(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+-- Name: compare_exact_name_columns(text); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
-CREATE FUNCTION public.compare_all_name_columns(player_name text) RETURNS SETOF public.players
+CREATE FUNCTION public.compare_exact_name_columns(player_name text) RETURNS SETOF public.players
     LANGUAGE plpgsql
     AS $$
  BEGIN
- 	RETURN QUERY select * from players where dk_name = player_name or fd_name=player_name or br_name=player_name or br2_name=player_name or rg_name=player_name or fte_name=player_name;
+ 	RETURN QUERY select * from players where dk_name  = player_name or
+ 											 fd_name  = player_name or
+ 											 br_name  = player_name or
+ 											 rg_name  = player_name or
+ 											 fte_name = player_name or
+ 											 alt_name = player_name;
  END; $$;
 
 
-ALTER FUNCTION public.compare_all_name_columns(player_name text) OWNER TO jackschultz;
+ALTER FUNCTION public.compare_exact_name_columns(player_name text) OWNER TO jackschultz;
 
 --
--- Name: compare_all_name_columns_like(text); Type: FUNCTION; Schema: public; Owner: jackschultz
+-- Name: compare_exact_name_columns_like(text); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
-CREATE FUNCTION public.compare_all_name_columns_like(player_name text) RETURNS SETOF public.players
+CREATE FUNCTION public.compare_exact_name_columns_like(player_name text) RETURNS SETOF public.players
     LANGUAGE plpgsql
     AS $$
  BEGIN
  	RETURN QUERY select * from players where dk_name  like '%' || player_name || '%' or
- 											 fd_name  like '%' ||player_name || '%' or
- 											 br_name  like '%' ||player_name || '%' or 
- 											 br2_name like '%' ||player_name || '%' or
- 											 rg_name  like '%' ||player_name || '%' or 
- 											 fte_name like '%' ||player_name || '%';
+ 											 fd_name  like '%' || player_name || '%' or
+ 											 br_name  like '%' || player_name || '%' or 
+ 											 rg_name  like '%' || player_name || '%' or 
+ 											 fte_name like '%' || player_name || '%' or
+ 											 alt_name like '%' || player_name || '%';
  END; $$;
 
 
-ALTER FUNCTION public.compare_all_name_columns_like(player_name text) OWNER TO jackschultz;
+ALTER FUNCTION public.compare_exact_name_columns_like(player_name text) OWNER TO jackschultz;
 
 --
 -- Name: compare_lowercase_names(text); Type: FUNCTION; Schema: public; Owner: jackschultz
@@ -121,7 +131,12 @@ CREATE FUNCTION public.compare_lowercase_names(player_name text) RETURNS SETOF p
     LANGUAGE plpgsql
     AS $$
  BEGIN
- 	RETURN QUERY select * from players where lower(dk_name) = lower(player_name) or lower(fd_name) = lower(player_name) or lower(br_name) = lower(player_name) or lower(br2_name) = lower(player_name) or lower(rg_name) = lower(player_name) or lower(fte_name) = lower(player_name);
+ 	RETURN QUERY select * from players where lower(dk_name) = lower(player_name)  or
+ 											 lower(fd_name) = lower(player_name)  or
+ 											 lower(br_name) = lower(player_name)  or
+ 											 lower(rg_name) = lower(player_name)  or
+ 											 lower(fte_name) = lower(player_name) or
+ 											 lower(alt_name) = lower(player_name) ;
  END; $$;
 
 
@@ -135,7 +150,7 @@ CREATE FUNCTION public.compare_non_vowel_names(player_name text) RETURNS SETOF p
     LANGUAGE plpgsql
     AS $$
  BEGIN
- 	RETURN QUERY select * from players where remove_non_ascii_and_vowels(dk_name) = remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(fd_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(br_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(br2_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(rg_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(fte_name)=remove_non_ascii_and_vowels(player_name);
+ 	RETURN QUERY select * from players where remove_non_ascii_and_vowels(dk_name) = remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(fd_name)=remove_non_ascii_and_vowels(player_name)  or remove_non_ascii_and_vowels(br_name)=remove_non_ascii_and_vowels(player_name)  or  remove_non_ascii_and_vowels(rg_name)=remove_non_ascii_and_vowels(player_name)  or remove_non_ascii_and_vowels(fte_name)=remove_non_ascii_and_vowels(player_name) or remove_non_ascii_and_vowels(alt_name)=remove_non_ascii_and_vowels(player_name);
  END; $$;
 
 
@@ -149,7 +164,12 @@ CREATE FUNCTION public.compare_unaccented_names(player_name text) RETURNS SETOF 
     LANGUAGE plpgsql
     AS $$
  BEGIN
- 	RETURN QUERY select * from players where unaccent(dk_name) = unaccent(player_name) or unaccent(fd_name) = unaccent(player_name) or unaccent(br_name) = unaccent(player_name) or unaccent(br2_name) = unaccent(player_name) or unaccent(rg_name) = unaccent(player_name) or unaccent(fte_name) = unaccent(player_name);
+ 	RETURN QUERY select * from players where unaccent(dk_name) = unaccent(player_name)  or
+ 											 unaccent(fd_name) = unaccent(player_name)  or
+ 											 unaccent(br_name) = unaccent(player_name)  or
+ 											 unaccent(rg_name) = unaccent(player_name)  or
+ 											 unaccent(fte_name) = unaccent(player_name) or
+ 											 unaccent(alt_name) = unaccent(player_name);
  END; $$;
 
 
