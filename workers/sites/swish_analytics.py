@@ -13,7 +13,7 @@ from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name
 import utils
 import helpers
 
-base_directory = 'data2/salaries/swishanalytics2'
+base_directory = 'data2/swishanalytics'
 
 base_url = 'https://swishanalytics.com/optimus/nba/daily-fantasy-salary-changes'
 
@@ -21,9 +21,7 @@ valid_sites = ['fd', 'dk']
 
 
 def gather_salary_changes_for_season(season):
-    for date in utils.dates_in_season(season):
-        gather_salary_changes_by_date(date)
-
+    utils.perform_action_for_season(season, gather_salary_changes_by_date)
 
 def gather_salary_changes_for_month(year, month):
     for day in utils.iso_dates_in_month(year, month):
@@ -56,8 +54,7 @@ def _get_site_filepath_by_date(site_abbrv, date):
 
 
 def scrape_salary_changes_for_season(season):
-    for date in utils.dates_in_season(season):
-        scrape_salary_changes_by_date(date)
+    utils.perform_action_for_season(season, scrape_salary_changes_by_date)
 
 
 def scrape_salary_changes_for_month(year, month):

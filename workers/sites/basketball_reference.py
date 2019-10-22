@@ -12,7 +12,7 @@ from db.finders import find_team_by_name, find_game_by_date_and_team, find_playe
 
 from db.creators import create_game, create_player_by_name, create_stat_line_with_stats
 from db.updaters import update_player_name
-from helpers import timestamp_to_minutes
+import helpers
 import utils
 
 base_url = 'https://www.basketball-reference.com'
@@ -24,12 +24,19 @@ stat_csv_keys = ['name', 'team', 'fd_points', 'dk_points', 'minutes', 'minutes_n
                  'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'pm']
 
 
-def directory_from_date(date):
-    year, month, _ = date.split('-')
-    return f"data2/box_scores/{year}/{month}/{date}"
+games_base_directory = 'data2/basketball_reference/games'
+box_scores_base_directory = 'data2/basketball_reference/box_scores'
+
+def box_scores_directory_from_date(date):
+    _, month, _ = date.split('-')
+    season = helpers.season_from_date(date)
+    directory = f"{box_scores_base_directory}/{season}/{month}/{date}"
+    print(directory)
+    utils.ensure_directory_exists(directory)
+    return directory
+
 
 # GATHERING
-
 
 def gather_box_scores_for_season(season):
     for date in utils.dates_in_season(season):
@@ -61,10 +68,7 @@ def get_box_score_urls(main_url):
 
 def gather_box_score(date, box_score_url):
     print(box_score_url)
-
-    directory = directory_from_date(date)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    directory = box_scores_directory_from_date(date)
     page = requests.get(base_url+box_score_url)
 
     tree = html.fromstring(page.content)
@@ -92,7 +96,7 @@ def create_stat_dict(stat_html):
         stat_vals = [0] * 18
     else:
         minutes = trs[0].text
-        minutes_numeric = timestamp_to_minutes(minutes)
+        minutes_numeric = helpers.timestamp_to_minutes(minutes)
         fg = trs[1].text
         fga = trs[2].text
         tp = trs[4].text
@@ -211,7 +215,7 @@ def calc_fd_points(sd):
 # Stat Lines
 
 def loop_stat_lines_on_date(date):
-    directory = directory_from_date(date)
+    directory = box_scores_directory_from_date(date)
     for _, _, files in os.walk(directory):
         for filename in files:
             if filename.endswith(".csv"):
@@ -277,9 +281,8 @@ def gather_games_for_season(season):
     '''
     _, end_year = season.split('-')
     year = int(f'20{end_year}')
-    directory = f"data2/games/{season}"
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    directory = f"{games_base_directory}/{season}"
+    utils.ensure_directory_exists(directory)
     for month_num in range(1, 13):
         month_name = calendar.month_name[month_num].lower()
         print(month_name)
@@ -294,7 +297,7 @@ def gather_games_for_season(season):
 def load_games_for_season(season):
     _, end_year = season.split('-')
     year = int(f'20{end_year}')
-    directory = f"data2/games/{season}"
+    directory = f"{games_base_directory}/{season}"
     for month_num in range(1, 13):
         filepath = f"{directory}/{f'{month_num:02}'}.html"
         with open(filepath, 'r') as f:

@@ -44,6 +44,10 @@ def dates_in_season(season):
 
 # Loading players
 
+def perform_action_for_season(season, by_date_function, *args, **kwargs):
+    for date in dates_in_season(season):
+        by_date_function(date, *args, **kwargs)
+
 
 def load_players_by_name(site_abbrv, name, force=False):
     '''
