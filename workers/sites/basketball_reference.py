@@ -10,7 +10,7 @@ from db.finders import find_team_by_name, find_game_by_date_and_team, find_playe
     find_player_by_exact_name, \
     find_team_by_site_abbrv, find_stat_line_by_player_and_game
 
-from db.creators import create_game, create_player_by_name, create_stat_line_with_stats
+from db.creators import create_game, create_player_by_name, create_or_update_stat_line_with_stats
 from db.updaters import update_player_name
 import helpers
 import utils
@@ -21,17 +21,17 @@ stat_keys = ['minutes', 'minutes_numeric', 'fg', 'fga', 'tp', 'tpa', 'ft',
              'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'pm']
 
 stat_csv_keys = ['name', 'team', 'fd_points', 'dk_points', 'minutes', 'minutes_numeric', 'fg', 'fga', 'tp', 'tpa', 'ft',
-                 'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'pm']
+                 'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'pm', 'active']
 
 
 games_base_directory = 'data2/basketball_reference/games'
 box_scores_base_directory = 'data2/basketball_reference/box_scores'
 
+
 def box_scores_directory_from_date(date):
     _, month, _ = date.split('-')
     season = helpers.season_from_date(date)
     directory = f"{box_scores_base_directory}/{season}/{month}/{date}"
-    print(directory)
     utils.ensure_directory_exists(directory)
     return directory
 
@@ -39,12 +39,12 @@ def box_scores_directory_from_date(date):
 # GATHERING
 
 def gather_box_scores_for_season(season):
-    for date in utils.dates_in_season(season):
+    for date in helpers.dates_in_season(season):
         gather_box_scores_by_date(date)
 
 
 def gather_box_scores_for_month(year, month):
-    for day in utils.iso_dates_in_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
         gather_box_scores_by_date(day)
 
 
@@ -88,10 +88,13 @@ def gather_box_score(date, box_score_url):
     return
 
 
-def create_stat_dict(stat_html):
-    name = stat_html.xpath('.//a')[0].text
-    trs = stat_html.xpath('./td')
-    if len(trs) == 1:
+def create_stat_dict(stat_html, active=True):
+    try:
+        name = stat_html.xpath('.//a')[0].text
+        trs = stat_html.xpath('./td')
+    except:
+        pass
+    if not active or len(trs) == 1:
         # did not play
         stat_vals = [0] * 18
     else:
@@ -121,17 +124,17 @@ def create_stat_dict(stat_html):
 
 
 def scrape_box_scores_for_season(season):
-    for date in utils.dates_in_season(season):
+    for date in helpers.dates_in_season(season):
         scrape_box_scores_by_date(date)
 
 
 def scrape_box_scores_for_month(year, month):
-    for day in utils.iso_dates_in_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
         scrape_box_scores_by_date(day)
 
 
 def scrape_box_scores_by_date(date):
-    directory = directory_from_date(date)
+    directory = box_scores_directory_from_date(date)
     for _, _, files in os.walk(directory):
         for filename in files:
             if filename.endswith(".html"):
@@ -153,14 +156,14 @@ def find_game_from_box_score(date, box_score_html):
 
 def scrape_box_score(date, html_text):
     tree = html.fromstring(html_text)
-    game, away_team, home_team = find_game_from_box_score(date, tree)
+    _, away_team, home_team = find_game_from_box_score(date, tree)
     print('Scraping stats on %s for %s at %s' %
           (date, away_team['name'], home_team['name']))
     #tables = tree.xpath('//table[contains(., "Basic Box Score Stats")]')
     full_game_stats = []
-    full_game_stats.extend(run_team_stats(home_team, game, tree))
-    full_game_stats.extend(run_team_stats(away_team, game, tree))
-    directory = directory_from_date(date)
+    full_game_stats.extend(run_team_stats(home_team, tree))
+    full_game_stats.extend(run_team_stats(away_team, tree))
+    directory = box_scores_directory_from_date(date)
     filepath = directory + \
         '/%sv%s.csv' % (away_team['abbrv'], home_team['abbrv'])
     with open(filepath, 'w') as csvfile:
@@ -171,18 +174,28 @@ def scrape_box_score(date, html_text):
     return
 
 
-def run_team_stats(team, game, tree):
+def run_team_stats(team, tree):
     team_all_box_basic = "all_box-%s-game-basic" % team['br_abbrv']
-    home_team_rows = tree.xpath(
+    team_rows = tree.xpath(
         f"//div[@id=\"{team_all_box_basic}\" and contains(@class, 'table_wrapper')]//tbody/tr[not(@class)]")
     team_stats = []
-    for stats in home_team_rows:
+    for stats in team_rows:
         name, stat_dict = create_stat_dict(stats)
         team_stats.append(save_stat_line(name, team, stat_dict))
+    # now gotta find the inactive players for home and away
+    inactives = tree.xpath(
+        f"//*[@id='content']//strong[.=\"{team['br_abbrv']}\"]/..")[0]
+    # we need to loop the siblings, and when either we hit another span, or we run out of siblings, then we stop
+    for inactive in inactives.itersiblings():
+        if inactive.tag == 'span':
+            break  # this cuts it off from home and away players
+        name = inactive.text
+        stat_dict = stat_dict = dict(zip(stat_keys, [0] * 18)) #zipping info together like create_stat_dict does
+        team_stats.append(save_stat_line(name, team, stat_dict, active=False))
     return team_stats
 
 
-def save_stat_line(name, team, stat_dict):
+def save_stat_line(name, team, stat_dict, active=True):
     # find player
     dk_points = calc_dk_points(stat_dict)
     fd_points = calc_fd_points(stat_dict)
@@ -190,6 +203,8 @@ def save_stat_line(name, team, stat_dict):
     stat_dict['fd_points'] = fd_points
     stat_dict['name'] = name
     stat_dict['team'] = team['br_abbrv']
+    # only getting called here if has actual numbers.
+    stat_dict['active'] = active
     return stat_dict
 
 
@@ -229,12 +244,12 @@ def loop_stat_lines_on_date(date):
 
 
 def load_stat_lines_for_season(season):
-    for date in utils.dates_in_season(season):
+    for date in helpers.dates_in_season(season):
         load_stat_lines_on_date(date)
 
 
 def load_stat_lines_for_month(year, month):
-    for day in utils.iso_dates_in_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
         load_stat_lines_on_date(day)
 
 
@@ -247,20 +262,21 @@ def load_stat_lines_on_date(date):
         team_abbrv = stat_dict.pop('team')
         team = find_team_by_site_abbrv('br', team_abbrv)
         minutes = stat_dict.pop('minutes_numeric')
+        active = True if stat_dict.pop('active') == 'True' else False
         game = find_game_by_date_and_team(date, team['id'])
+        if not player or not game:
+            import pdb;pdb.set_trace()
         stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
         dk_points = stat_dict.pop('dk_points')
         fd_points = stat_dict.pop('fd_points')
-        if not stat_line:
-            # create the stat_line
-            create_stat_line_with_stats(
-                player['id'], team['id'], game['id'], dk_points, fd_points, stat_dict, minutes)
+        create_or_update_stat_line_with_stats(
+            player['id'], team['id'], game['id'], dk_points, fd_points, stat_dict, minutes, active=active)
 
 
 # PLAYERS
 
 def load_players_for_season(season, force=False):
-    for date in utils.dates_in_season(season):
+    for date in helpers.dates_in_season(season):
         load_players_on_date(date, force=force)
 
 

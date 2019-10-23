@@ -1,6 +1,9 @@
 import os
 import calendar
 import datetime
+import csv
+
+import helpers
 
 from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name, \
     find_player_by_clean_name, find_player_by_unaccented_name, \
@@ -18,35 +21,21 @@ def ensure_directory_exists(directory):
         os.makedirs(directory)
 
 
-def iso_dates_in_month(year, month):
-    '''
-    Yields date in isoformat in a specific year and month
-    '''
-    num_days = calendar.monthrange(year, month)[1]
-    days = [datetime.date(year, month, day) for day in range(1, num_days+1)]
-    for day in days:
-        yield day.isoformat()
-
-
-def dates_in_season(season):
-    '''
-    Season is of format '18-19', or '19-20'.
-    '''
-    start_year, end_year = season.split('-')
-    full_start_year = int('20' + start_year)
-    full_end_year = int('20' + end_year)
-    for month in range(10, 13):
-        for day in iso_dates_in_month(full_start_year, month):
-            yield day
-    for month in range(1, 7):
-        for day in iso_dates_in_month(full_end_year, month):
-            yield day
-
 # Loading players
 
+
 def perform_action_for_season(season, by_date_function, *args, **kwargs):
-    for date in dates_in_season(season):
+    for date in helpers.dates_in_season(season):
         by_date_function(date, *args, **kwargs)
+
+
+def _add_player_to_column(site_name_column, player_id, name):
+    print(f'Adding {name}')
+    player = update_player_name(site_name_column, player_id, name)
+    return True
+
+
+name_finding_functions = [find_player_by_exact_name, find_player_by_clean_name, find_player_by_unaccented_name, find_player_by_lowercase_name]
 
 
 def load_players_by_name(site_abbrv, name, force=False):
@@ -54,31 +43,29 @@ def load_players_by_name(site_abbrv, name, force=False):
     Loading player by name
     '''
     site_name_column = f'{site_abbrv}_name'
-    # look for player with sa_name
+    # look for player with {site_abbrv}_name first, since if that matches
+    # we're done.
     player = find_player_by_site_abbrv_name(site_abbrv, name)
     if player:
-        return
-    # next look for exact match
-    player = find_player_by_exact_name(name)
-    if player:
-        # set this as br_name then continue
-        update_player_name(site_name_column, player['id'], name)
-        return
-    # continuing, we want to clean the data
-    player = find_player_by_clean_name(name)
-    if player:
-        update_player_name(site_name_column, player['id'], name)
-        return
-    player = find_player_by_unaccented_name(name)
-    if player:
-        update_player_name(site_name_column, player['id'], name)
-        return
-    player = find_player_by_lowercase_name(name)
-    if player:
-        update_player_name(site_name_column, player['id'], name)
-        return
+        return player
+    for nff in name_finding_functions:
+        player = nff(name)
+        if player:
+            return _add_player_to_column(site_name_column, player['id'], name)
     print(f'No name match {name}')
     if force:
         print(f'Force creating player in {site_name_column}: {name}')
         create_player_by_name(site_name_column, name)
-    return
+    return None
+
+
+def load_players_from_file(filepath, site_abbrv, name_in_row_fn, force=False):
+    print(f'Loading players from file {filepath}')
+    with open(filepath, 'r') as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        for row in reader:
+            name = name_in_row_fn(row)
+            player = load_players_by_name(site_abbrv, name, force=force)
+            if not player:
+                print(f'no player named {name}')

@@ -12,7 +12,7 @@ base_directory = "data2/fivethirtyeight"
 
 table_headings = ['full_name', 'small_name', 'min_pg', 'min_sg', 'min_sf', 'min_pf', 'min_c', 'total_min', 'vs_full_strength', 'rtg_off', 'rtg_def']
 
-def gather_predictions():
+def gather_projections():
     '''
     Getting the main page and saving it as when it was updated.
     At the bottom of the page, there's a dropdown asking for
@@ -60,7 +60,7 @@ def gather_team_pages(tree, time_string, directory):
         with open(filepath, 'w') as f:
             f.write(page.text)
 
-def scrape_predictions():
+def scrape_projections():
     '''
     There are three tables in the page. Current rotation, Full strength rotation, and full strength playoff rotation.
     For this, we want to include all of them, but in different places in the csv file.

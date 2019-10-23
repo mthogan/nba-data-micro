@@ -23,6 +23,8 @@ login_data = {'username': username, 'password': password}
 base_url = "https://rotogrinders.com/projected-stats/nba-player.csv?site=%s&date=%s"
 base_directory = 'data2/rotogrinders'
 
+base_json_url = 'https://d1qacz8ndd7avl.cloudfront.net/lineuphq/v1.00/%s/3/base/nba-player.json'
+
 site_infos = [('fanduel', 'fd'), ('draftkings', 'dk')]
 
 def _get_roto_session():
@@ -37,17 +39,27 @@ def _get_roto_session():
             return None
 
 
-def _get_filepath_from_date(date, data_type, site_abbrv):
+def _get_csv_filepath_from_date(date, site_abbrv):
     '''
     To make it easier to know where the data is going.
     data_type refers to whether it's the csv data or json
     since rg has both.
     '''
     season = helpers.season_from_date(date)
-    directory = f'{base_directory}/{data_type}/{season}/{site_abbrv}'
+    directory = f'{base_directory}/csvs/{season}/{site_abbrv}'
     utils.ensure_directory_exists(directory)
     return f"{directory}/{date}.csv"
 
+def _get_json_filepath_from_date(date):
+    '''
+    To make it easier to know where the data is going.
+    data_type refers to whether it's the csv data or json
+    since rg has both.
+    '''
+    season = helpers.season_from_date(date)
+    directory = f'{base_directory}/json/{season}'
+    utils.ensure_directory_exists(directory)
+    return f"{directory}/{date}.json"
 
 def gather_csv_projections_for_season(season):
     session = _get_roto_session()
@@ -57,8 +69,8 @@ def gather_csv_projections_for_season(season):
 def gather_csv_projections_for_month(year, month, session=None):
     if not session:
         session = _get_roto_session()
-    for date in utils.iso_dates_in_month(year, month):
-        gather_projections_on_date(date, session=session)
+    for date in helpers.iso_dates_in_month(year, month):
+        gather_csv_projections_on_date(date, session=session)
 
 
 def gather_csv_projections_on_date(date, session=False):
@@ -68,9 +80,25 @@ def gather_csv_projections_on_date(date, session=False):
         print(f'Getting projections for {date} from {site_name}')
         url = base_url % (site_name, date)
         page = session.get(url)
-        filepath = _get_filepath_from_date(date, 'csvs', site_abbrv)
+        filepath = _get_csv_filepath_from_date(date, site_abbrv)
         with open(filepath, 'w') as f:
             f.write(page.text)  # throw the csv file there
+
+
+def gather_json_projections_for_season(season):
+    session = _get_roto_session()
+    utils.perform_action_for_season(season, gather_json_projections_on_date, session=session)
+
+def gather_json_projections_on_date(date, session=False):
+    if not session:
+        session = _get_roto_session()
+    print(f'Getting json RG projections for {date}')
+    url = base_json_url % (date)
+    page = session.get(url)
+    filepath = _get_json_filepath_from_date(date)
+    with open(filepath, 'w') as f:
+        f.write(page.text)  # throw the csv file there
+
 
 
 def load_players_for_season(season):
@@ -78,7 +106,7 @@ def load_players_for_season(season):
 
 
 def load_players_for_month(year, month):
-    for date in utils.iso_dates_in_month(year, month):
+    for date in helpers.iso_dates_in_month(year, month):
         load_players_on_date(date)
 
 
@@ -89,7 +117,7 @@ def load_players_on_date(date):
     '''
     print(f'Loading players on {date}')
     for _, site_abbrv in site_infos:
-        filepath = _get_filepath_from_date(date, site_abbrv)
+        filepath = _get_csv_filepath_from_date(date, site_abbrv)
         with open(filepath, 'r') as f:
             reader = csv.reader(f)
             for row in reader:
@@ -98,19 +126,19 @@ def load_players_on_date(date):
 
 
 def load_salaries_for_season(season):
-    for date in utils.dates_in_season(season):
+    for date in helpers.dates_in_season(season):
         load_salaries_on_date(date)
 
 
 def load_salaries_for_month(year, month):
-    for date in utils.iso_dates_in_month(year, month):
+    for date in helpers.iso_dates_in_month(year, month):
         load_salaries_on_date(date)
 
 
 def load_salaries_on_date(date):
     print(f'Loading salaries from RG on {date}')
     for _, site_abbrv in site_infos:
-        filepath = _get_filepath_from_date(date, site_abbrv)
+        filepath = _get_csv_filepath_from_date(date, site_abbrv)
         with open(filepath, 'r') as f:
             reader = csv.reader(f)
             for row in reader:

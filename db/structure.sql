@@ -264,7 +264,8 @@ CREATE TABLE public.stat_lines (
     dk_points numeric,
     fd_points numeric,
     stats jsonb,
-    minutes numeric DEFAULT 0.0
+    minutes numeric DEFAULT 0.0,
+    active boolean DEFAULT true
 );
 
 
@@ -297,11 +298,11 @@ CREATE VIEW public.stat_line_points AS
     sl.dk_positions,
     sl.dk_salary,
     sl.dk_points,
-    round((sl.dk_points * (36.0 / sl.minutes)), 2) AS dkpp36,
+    round((sl.dk_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS dkpp36,
     sl.fd_salary,
     sl.fd_positions,
     sl.fd_points,
-    round((sl.fd_points * (36.0 / sl.minutes)), 2) AS fdpp36,
+    round((sl.fd_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS fdpp36,
     p.id AS player_id
    FROM public.stat_lines sl,
     public.games g,
@@ -430,6 +431,14 @@ ALTER TABLE ONLY public.stat_lines
 
 ALTER TABLE ONLY public.stat_lines
     ADD CONSTRAINT stat_lines_player_id_game_id_key UNIQUE (player_id, game_id);
+
+
+--
+-- Name: stat_lines stat_lines_player_id_game_id_key1; Type: CONSTRAINT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.stat_lines
+    ADD CONSTRAINT stat_lines_player_id_game_id_key1 UNIQUE (player_id, game_id);
 
 
 --

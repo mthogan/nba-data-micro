@@ -52,6 +52,14 @@ def find_team_by_name(name):
     return dict(zip(team_columns, team_info))
 
 
+def find_team_by_abbrv(name_abbrv):
+    cursor.execute(select_team_by_abbrv_str, (name_abbrv,))
+    team_info = cursor.fetchone()
+    if not team_info:
+        return None
+    return dict(zip(team_columns, team_info))
+
+
 def find_team_by_site_abbrv(site_abbrv, name_abbrv):
     select_team_by_site_abbrv_str = select_team_by_site_abbrv_column_str % site_abbrv
     cursor.execute(select_team_by_site_abbrv_str, (name_abbrv,))

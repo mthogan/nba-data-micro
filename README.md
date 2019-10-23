@@ -4,14 +4,19 @@ In here we have actions for getting necessary information from online, cleaning 
 
 ## Daily tasks:
 
-- Gather, scrape, load stat_lines from the day before
+- Gather, scrape, load stat_lines from the day before from basketball_reference
 
  - Get site csv salary data
- 	- Download manually 
+ 	- Download manually
+
+ - Load the players from the FD and DK csvs
+ 	- `load_player_for_date(date)`
+
+ - Load the new stat_lines from FD and DK csvs by adding the salary and positions
 
 
 - Gather 538 rotation information
-	- `gather_predictions()` 
+	- `gather_projections()` 
 	- Needs to be run daily since it gets updated daily and no history
 
 

@@ -24,7 +24,7 @@ def gather_salary_changes_for_season(season):
     utils.perform_action_for_season(season, gather_salary_changes_by_date)
 
 def gather_salary_changes_for_month(year, month):
-    for day in utils.iso_dates_in_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
         gather_salary_changes_by_date(day)
 
 
@@ -58,7 +58,7 @@ def scrape_salary_changes_for_season(season):
 
 
 def scrape_salary_changes_for_month(year, month):
-    for day in utils.iso_dates_in_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
         scrape_salary_changes_by_date(day)
 
 
@@ -108,7 +108,7 @@ def load_salaries_on_date(date):
 
 
 def load_players_in_month(year, month):
-    for day in utils.iso_dates_in_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
         load_players_on_date(day)
 
 
