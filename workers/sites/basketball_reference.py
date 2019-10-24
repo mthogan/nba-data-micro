@@ -190,7 +190,8 @@ def run_team_stats(team, tree):
         if inactive.tag == 'span':
             break  # this cuts it off from home and away players
         name = inactive.text
-        stat_dict = stat_dict = dict(zip(stat_keys, [0] * 18)) #zipping info together like create_stat_dict does
+        # zipping info together like create_stat_dict does
+        stat_dict = stat_dict = dict(zip(stat_keys, [0] * 18))
         team_stats.append(save_stat_line(name, team, stat_dict, active=False))
     return team_stats
 
@@ -265,7 +266,8 @@ def load_stat_lines_on_date(date):
         active = True if stat_dict.pop('active') == 'True' else False
         game = find_game_by_date_and_team(date, team['id'])
         if not player or not game:
-            import pdb;pdb.set_trace()
+            import pdb
+            pdb.set_trace()
         stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
         dk_points = stat_dict.pop('dk_points')
         fd_points = stat_dict.pop('fd_points')

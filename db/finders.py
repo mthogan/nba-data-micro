@@ -20,6 +20,8 @@ select_lowercase_player_names_str = "select * from compare_lowercase_names(%s)"
 select_unaccented_player_names_str = "select * from compare_unaccented_names(%s)"
 
 select_stat_line_by_player_and_game_str = "select * from stat_lines where player_id=%s and game_id=%s"
+select_stat_line_by_player_and_date_str = "select * from stat_lines sl, games g where sl.game_id=g.id and player_id=%s and g.date=%s"
+
 
 team_columns = ['id', 'name', 'abbrv', 'rg_abbrv', 'br_abbrv']
 player_columns = ['id', 'dk_name', 'fd_name',
@@ -93,6 +95,13 @@ def find_player_by_br_name(name):
         return None
     return dict(zip(player_columns, player_info))
 
+def find_stat_line_by_player_and_date(player_id, date):
+    cursor.execute(select_stat_line_by_player_and_date_str,
+                   (player_id, date,))
+    stat_line_info = cursor.fetchone()
+    if not stat_line_info:
+        return None
+    return dict(zip(stat_line_columns, stat_line_info))
 
 def find_stat_line_by_player_and_game(player_id, game_id):
     cursor.execute(select_stat_line_by_player_and_game_str,

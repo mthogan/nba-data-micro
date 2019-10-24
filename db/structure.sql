@@ -249,6 +249,43 @@ ALTER SEQUENCE public.players_id_seq OWNED BY public.players.id;
 
 
 --
+-- Name: projections; Type: TABLE; Schema: public; Owner: jackschultz
+--
+
+CREATE TABLE public.projections (
+    id integer NOT NULL,
+    stat_line_id integer,
+    source character varying(50),
+    "all" jsonb,
+    minutes numeric DEFAULT 0.0
+);
+
+
+ALTER TABLE public.projections OWNER TO jackschultz;
+
+--
+-- Name: projections_id_seq; Type: SEQUENCE; Schema: public; Owner: jackschultz
+--
+
+CREATE SEQUENCE public.projections_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.projections_id_seq OWNER TO jackschultz;
+
+--
+-- Name: projections_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: jackschultz
+--
+
+ALTER SEQUENCE public.projections_id_seq OWNED BY public.projections.id;
+
+
+--
 -- Name: stat_lines; Type: TABLE; Schema: public; Owner: nbauser
 --
 
@@ -372,6 +409,13 @@ ALTER TABLE ONLY public.players ALTER COLUMN id SET DEFAULT nextval('public.play
 
 
 --
+-- Name: projections id; Type: DEFAULT; Schema: public; Owner: jackschultz
+--
+
+ALTER TABLE ONLY public.projections ALTER COLUMN id SET DEFAULT nextval('public.projections_id_seq'::regclass);
+
+
+--
 -- Name: stat_lines id; Type: DEFAULT; Schema: public; Owner: nbauser
 --
 
@@ -415,6 +459,14 @@ ALTER TABLE ONLY public.players
 
 ALTER TABLE ONLY public.players
     ADD CONSTRAINT players_rg_name_key UNIQUE (rg_name);
+
+
+--
+-- Name: projections projections_pkey; Type: CONSTRAINT; Schema: public; Owner: jackschultz
+--
+
+ALTER TABLE ONLY public.projections
+    ADD CONSTRAINT projections_pkey PRIMARY KEY (id);
 
 
 --
@@ -516,6 +568,14 @@ ALTER TABLE ONLY public.games
 
 ALTER TABLE ONLY public.games
     ADD CONSTRAINT games_home_team_id_fkey FOREIGN KEY (home_team_id) REFERENCES public.teams(id);
+
+
+--
+-- Name: projections projections_stat_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: jackschultz
+--
+
+ALTER TABLE ONLY public.projections
+    ADD CONSTRAINT projections_stat_line_id_fkey FOREIGN KEY (stat_line_id) REFERENCES public.stat_lines(id);
 
 
 --

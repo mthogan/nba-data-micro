@@ -47,13 +47,22 @@ def load_players_on_date(date):
     filepath = f'{directory}/{date}.csv'
     utils.load_players_from_file(filepath, 'dk', _name_from_row, force=False)
 
+def load_salaries_positions_for_month(year, month):
+    for day in helpers.iso_dates_in_month(year, month):
+        load_salaries_positions_for_date(day)
+
 
 def load_salaries_positions_for_date(date):
     print(f'Loading DK salaries and positions for {date}')
     season = helpers.season_from_date(date)
     directory = f'{base_directory}/{season}/dk'
-    filepath = f'{directory}/{date}.csv'
+    for fn in os.listdir(directory):
+        if fn.startswith(date):
+            filepath = f'{directory}/{fn}'
+            load_salaries_positions_for_date_with_filepath(date, filepath)
 
+
+def load_salaries_positions_for_date_with_filepath(date, filepath):
     with open(filepath, 'r') as f:
         reader = csv.reader(f)
         next(reader, None)

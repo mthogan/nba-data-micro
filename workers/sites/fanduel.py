@@ -42,14 +42,14 @@ def load_players_for_season(season):
             filepath, 'fd', _name_from_row, force=False)
 
 
-def load_players_on_date(date):
+def load_players_on_date(date, force=False):
     season = helpers.season_from_date(date)
     directory = f'{base_directory}/{season}/fd'
     filepath = f'{directory}/{date}.csv'
-    utils.load_players_from_file(filepath, 'fd', _name_from_row, force=False)
+    utils.load_players_from_file(filepath, 'fd', _name_from_row, force=force)
 
 
-def load_stat_lines_for_month(year, month):
+def load_salaries_positions_for_month(year, month):
     for day in helpers.iso_dates_in_month(year, month):
         load_salaries_positions_for_date(day)
 
@@ -58,8 +58,12 @@ def load_salaries_positions_for_date(date):
     print(f'Loading FD salaries and positions for {date}')
     season = helpers.season_from_date(date)
     directory = f'{base_directory}/{season}/fd'
-    filepath = f'{directory}/{date}.csv'
+    for fn in os.listdir(directory):
+        if fn.startswith(date):
+            filepath = f'{directory}/{fn}'
+            load_salaries_positions_for_date_with_filepath(date, filepath)
 
+def load_salaries_positions_for_date_with_filepath(date, filepath):
     with open(filepath, 'r') as f:
         reader = csv.reader(f)
         next(reader, None)
@@ -76,7 +80,6 @@ def load_salaries_positions_for_date(date):
             stat_line = find_stat_line_by_player_and_game(
                 player['id'], game['id'])
             if stat_line:
-                print('asdfasdfasdf')
                 update_stat_line_position_salary(
                     'fd', stat_line['id'], pos, sal)
             else:

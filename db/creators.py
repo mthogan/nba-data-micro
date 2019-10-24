@@ -7,6 +7,7 @@ create_team_str = "insert into teams(name, abbrv, rg_abbrv, br_abbrv) values (%s
 create_player_by_column_name_str = "insert into players(%s) values(%%s)"
 create_or_update_stat_line_str = "insert into stat_lines(player_id, team_id, game_id, dk_points, fd_points, stats, minutes, active) values(%s, %s, %s, %s, %s, %s, %s, %s) on conflict (player_id, game_id) do update set dk_points = excluded.dk_points, fd_points = excluded.fd_points, stats = excluded.stats, minutes = excluded.minutes, active = excluded.active;"
 create_stat_line_salary_position_str = "insert into stat_lines(player_id, team_id, game_id, %s_positions, %s_salary) values (%%s, %%s, %%s, %%s, %%s) on conflict do nothing"
+create_or_update_projection_str = "insert into projections(stat_line_id, source, bulk, minutes, dk_points, fd_points) values(%s, %s, %s, %s, %s, %s) on conflict (stat_line_id, source) do update set bulk = excluded.bulk, minutes = excluded.minutes, dk_points = excluded.dk_points, fd_points = excluded.fd_points;"
 
 
 def create_game(date, home_team_id, away_team_id, season):
@@ -34,4 +35,8 @@ def create_or_update_stat_line_with_stats(player_id, team_id, game_id, dk_points
 def create_stat_line_with_position_salary(site_abbrv, player_id, team_id, game_id, site_positions, site_salary):
     create_stat_line_str = create_stat_line_salary_position_str % (site_abbrv, site_abbrv)
     cursor.execute(create_stat_line_str, (player_id, team_id, game_id, site_positions, site_salary,))
+    return conn.commit()
+
+def create_or_update_projection(stat_line_id, source, bulk, minutes, dk_points, fd_points):
+    cursor.execute(create_or_update_projection_str, (stat_line_id, source, json.dumps(bulk), minutes, dk_points, fd_points,))
     return conn.commit()
