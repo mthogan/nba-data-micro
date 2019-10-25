@@ -352,6 +352,55 @@ CREATE MATERIALIZED VIEW public.avg_fd_sals_mat AS
 ALTER TABLE public.avg_fd_sals_mat OWNER TO jackschultz;
 
 --
+-- Name: contests; Type: TABLE; Schema: public; Owner: nbauser
+--
+
+CREATE TABLE public.contests (
+    id integer NOT NULL,
+    site_id integer NOT NULL,
+    name character varying(255),
+    date date NOT NULL,
+    num_games integer,
+    min_cash_score double precision,
+    start_time bigint,
+    entry_fee double precision,
+    places_paid integer,
+    max_entrants integer,
+    total_entrants integer,
+    min_cash_payout double precision,
+    prize_pool integer,
+    winning_score double precision,
+    slate integer,
+    bulk jsonb,
+    max_entries integer
+);
+
+
+ALTER TABLE public.contests OWNER TO nbauser;
+
+--
+-- Name: contests_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
+--
+
+CREATE SEQUENCE public.contests_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.contests_id_seq OWNER TO nbauser;
+
+--
+-- Name: contests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: nbauser
+--
+
+ALTER SEQUENCE public.contests_id_seq OWNED BY public.contests.id;
+
+
+--
 -- Name: games_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
 --
 
@@ -433,6 +482,42 @@ ALTER TABLE public.projections_id_seq OWNER TO nbauser;
 --
 
 ALTER SEQUENCE public.projections_id_seq OWNED BY public.projections.id;
+
+
+--
+-- Name: sites; Type: TABLE; Schema: public; Owner: nbauser
+--
+
+CREATE TABLE public.sites (
+    id integer NOT NULL,
+    name character varying(50) NOT NULL,
+    abbrv character varying(10) NOT NULL,
+    lowcase_name character varying(50)
+);
+
+
+ALTER TABLE public.sites OWNER TO nbauser;
+
+--
+-- Name: sites_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
+--
+
+CREATE SEQUENCE public.sites_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.sites_id_seq OWNER TO nbauser;
+
+--
+-- Name: sites_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: nbauser
+--
+
+ALTER SEQUENCE public.sites_id_seq OWNED BY public.sites.id;
 
 
 --
@@ -518,6 +603,13 @@ ALTER SEQUENCE public.teams_id_seq OWNED BY public.teams.id;
 
 
 --
+-- Name: contests id; Type: DEFAULT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.contests ALTER COLUMN id SET DEFAULT nextval('public.contests_id_seq'::regclass);
+
+
+--
 -- Name: games id; Type: DEFAULT; Schema: public; Owner: nbauser
 --
 
@@ -539,6 +631,13 @@ ALTER TABLE ONLY public.projections ALTER COLUMN id SET DEFAULT nextval('public.
 
 
 --
+-- Name: sites id; Type: DEFAULT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.sites ALTER COLUMN id SET DEFAULT nextval('public.sites_id_seq'::regclass);
+
+
+--
 -- Name: stat_lines id; Type: DEFAULT; Schema: public; Owner: nbauser
 --
 
@@ -550,6 +649,22 @@ ALTER TABLE ONLY public.stat_lines ALTER COLUMN id SET DEFAULT nextval('public.s
 --
 
 ALTER TABLE ONLY public.teams ALTER COLUMN id SET DEFAULT nextval('public.teams_id_seq'::regclass);
+
+
+--
+-- Name: contests contests_pkey; Type: CONSTRAINT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.contests
+    ADD CONSTRAINT contests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: contests contests_site_id_name_date_key; Type: CONSTRAINT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.contests
+    ADD CONSTRAINT contests_site_id_name_date_key UNIQUE (site_id, name, date);
 
 
 --
@@ -598,6 +713,14 @@ ALTER TABLE ONLY public.projections
 
 ALTER TABLE ONLY public.projections
     ADD CONSTRAINT projections_stat_line_id_source_key UNIQUE (stat_line_id, source);
+
+
+--
+-- Name: sites sites_pkey; Type: CONSTRAINT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.sites
+    ADD CONSTRAINT sites_pkey PRIMARY KEY (id);
 
 
 --
@@ -662,6 +785,13 @@ ALTER TABLE ONLY public.teams
 
 ALTER TABLE ONLY public.teams
     ADD CONSTRAINT teams_rg_abbrv_key UNIQUE (rg_abbrv);
+
+
+--
+-- Name: contests_date_idx; Type: INDEX; Schema: public; Owner: nbauser
+--
+
+CREATE INDEX contests_date_idx ON public.contests USING btree (date);
 
 
 --
@@ -732,6 +862,14 @@ CREATE INDEX stat_lines_player_id_idx ON public.stat_lines USING btree (player_i
 --
 
 CREATE INDEX stat_lines_team_id_idx ON public.stat_lines USING btree (team_id);
+
+
+--
+-- Name: contests contests_site_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: nbauser
+--
+
+ALTER TABLE ONLY public.contests
+    ADD CONSTRAINT contests_site_id_fkey FOREIGN KEY (site_id) REFERENCES public.sites(id);
 
 
 --
