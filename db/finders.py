@@ -26,6 +26,9 @@ select_stat_line_by_player_and_game_str = "select * from stat_lines where player
 select_stat_line_by_player_and_date_str = "select * from stat_lines sl, games g where sl.game_id=g.id and player_id=%s and g.date=%s"
 
 
+select_site_by_lowcase_name = "select * from sites where lowcase_name=%s"
+
+
 team_columns = ['id', 'name', 'abbrv', 'rg_abbrv', 'br_abbrv']
 player_columns = ['id', 'dk_name', 'fd_name',
                   'br_name', 'rg_name', 'current_team_id', 'fte_name']
@@ -33,7 +36,7 @@ player_name_columns = ['id', 'dk', 'fd', 'br', 'rg']
 game_columns = ['id', 'date', 'home_team_id', 'away_team_id', 'season']
 stat_line_columns = ['id', 'player_id', 'team_id', 'game_id', 'dk_positions',
                      'fd_positions', 'dk_salary', 'fd_salary', 'dk_points', 'fd_points', 'stats']
-
+site_columns = ['id', 'name', 'abbrv', 'lowcase_name']
 
 def find_game_by_date_and_team(date, team_id):
     cursor.execute(select_game_by_date_and_team_str, (date, team_id, team_id,))
@@ -176,3 +179,10 @@ def find_player_by_lowercase_name(name):
     if not player_info:
         return None
     return dict(zip(player_columns, player_info))
+
+def find_site_by_lowcase_name(lowcase_name):
+    cursor.execute(select_site_by_lowcase_name, (lowcase_name,))
+    site = cursor.fetchone()
+    if not site:
+        return None
+    return dict(zip(site_columns, site))

@@ -69,3 +69,17 @@ def load_players_from_file(filepath, site_abbrv, name_in_row_fn, force=False):
             player = load_players_by_name(site_abbrv, name, force=force)
             if not player:
                 print(f'no player named {name}')
+
+
+
+
+def get_json_filepath_from_date(date, base_directory):
+    '''
+    To make it easier to know where the data is going.
+    data_type refers to whether it's the csv data or json
+    since rg has both.
+    '''
+    season = helpers.season_from_date(date)
+    directory = f'{base_directory}/json/{season}'
+    ensure_directory_exists(directory)
+    return f"{directory}/{date}.json"
