@@ -8,7 +8,7 @@ from collections import defaultdict
 from copy import deepcopy
 import json
 
-from db.finders import find_team_by_name, find_all_teams, find_player_by_exact_name, find_stat_line_by_player_and_date
+from db.finders import find_team_by_name, find_all_teams, find_player_by_exact_name, find_stat_line_by_player_and_date, find_teams_playing_on_date
 from db.creators import create_or_update_projection
 import utils
 
@@ -82,6 +82,8 @@ def scrape_projections_for_date(date):
     '''
     print(f'Scraping 538 projections for {date}')
     for filepath in _loop_all_team_files_for_date(date):
+        team_abbrv = filepath.split('/')[2]
+        print(f'Scraping {team_abbrv} projs')
         with open(filepath, 'r') as f:
             tree = html.fromstring(f.read())
             scrape_player_information_from_tree(tree, filepath)
@@ -97,7 +99,7 @@ conversion_helper = dict(zip(csv_headers, csv_conversions))
 
 
 def _loop_all_team_files_for_date(date, extension='html'):
-    teams = find_all_teams()
+    teams = find_teams_playing_on_date(date)
     for team in teams:
         directory = f"{base_directory}/{team['abbrv']}"
         filepath = f'{directory}/{date}.{extension}'

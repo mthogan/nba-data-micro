@@ -10,7 +10,7 @@ date = '2019-01-01'
 #load_fte_players_on_date(date)
 #load_projections_for_date(date)
 
-load_fd_salaries_positions_for_date(date)
+#load_fd_salaries_positions_for_date(date)
 
 season = '19-20'
 #dk_load_players_for_season(season)
@@ -25,14 +25,15 @@ season = '19-20'
 
 #gather_json_projections_for_season(season)
 
-date = '2019-01-03'
+date = '2019-03-30'
+#load_dk_salaries_positions_for_date(date)
 #gather_json_projections_on_date(date)
 #load_json_projections_on_date(date)
 
 
 
-months = [10,11,12]
-year = 2018
+months = [4]
+year = 2019
 for month in months:
     #load_fd_salaries_positions_for_month(year, month)
     load_dk_salaries_positions_for_month(year, month)

@@ -6,30 +6,35 @@ from workers.sites.rotogrinders import gather_json_projections_on_date as gather
     load_json_projections_on_date as load_rg_json_projections_on_date
 
 # From yesterday
-yesterday = '2019-10-23'
+yesterday = '2019-10-24'
 # this is for players who haven't been there before, but were added from the salaries the day before
-# gather_box_scores_by_date(yesterday)
-# scrape_box_scores_by_date(yesterday)
-# load_br_players_on_date(yesterday)
-# load_stat_lines_on_date(yesterday)
+#gather_box_scores_by_date(yesterday)
+#scrape_box_scores_by_date(yesterday)
+#load_br_players_on_date(yesterday)
+#load_stat_lines_on_date(yesterday)
 
 # For today
 
-today = '2019-10-24'
+today = '2019-10-25'
 
 # after adding the salaries for the day, we want to load the players.
-#load_fd_players_on_date(today, force=True)
-# load_dk_players_on_date(today)
 
-# load_fd_salaries_positions_for_date(today)
-# load_dk_salaries_positions_for_date(today)
+'''
+load_fd_players_on_date(today, force=True)
+load_dk_players_on_date(today)
+
+load_fd_salaries_positions_for_date(today)
+load_dk_salaries_positions_for_date(today)
+'''
 
 # now to gather the projections ...
-# gather_538_projections()
-# scrape_538_projections_for_date(today)
-# gather_rg_csv_projections_on_date(today)
-# gather_rg_json_projections_on_date(today)
+#gather_538_projections()
+#scrape_538_projections_for_date(today)
+#gather_rg_csv_projections_on_date(today)
+#gather_rg_json_projections_on_date(today)
 
+'''
 # ... and then load them
-# load_rg_json_projections_on_date(today)
-# load_538_projections_for_date(today)
+load_538_projections_for_date(today)
+load_rg_json_projections_on_date(today)
+'''

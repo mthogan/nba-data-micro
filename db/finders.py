@@ -3,11 +3,14 @@ from psycopg2.extensions import AsIs
 
 select_game_count_str_str = "select count(*) from games"
 select_game_by_date_and_team_str = "select * from games where date=%s and (home_team_id=%s or away_team_id=%s)"
+select_games_by_date = "selet * from games where date=%s"
 
 select_all_teams = "select * from teams"
 select_team_by_name_str = "select * from teams where name=%s"
 select_team_by_abbrv_str = "select * from teams where abbrv=%s"
 select_team_by_site_abbrv_column_str = "select * from teams where %s_abbrv=%%s"
+select_teams_playing_on_date_str = "select t.* from games g, teams t where g.home_team_id=t.id and g.date=%s union select t.* from games g, teams t where g.away_team_id=t.id and g.date=%s"
+
 
 select_player_by_rg_name_str = "select * from players where rg_name=%s"
 select_player_by_br_name_str = "select * from players where br_name=%s"
@@ -40,11 +43,24 @@ def find_game_by_date_and_team(date, team_id):
     return dict(zip(game_columns, game_info))
 
 
+def find_game_by_date(date):
+    cursor.execute(select_game_by_date_and_team_str, (date,))
+    games = cursor.fetchall()
+    if not games:
+        return None
+    return [dict(zip(game_columns, game)) for game in games]
+
+
 def find_all_teams():
     cursor.execute(select_all_teams)
     teams = cursor.fetchall()
     return [dict(zip(team_columns, team)) for team in teams]
 
+
+def find_teams_playing_on_date(date):
+    cursor.execute(select_teams_playing_on_date_str, (date,date,))
+    teams = cursor.fetchall()
+    return [dict(zip(team_columns, team)) for team in teams]
 
 def find_team_by_name(name):
     cursor.execute(select_team_by_name_str, (name,))
