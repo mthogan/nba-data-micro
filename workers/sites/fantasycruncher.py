@@ -9,7 +9,7 @@ import utils
 import helpers
 
 base_url = 'https://www.fantasycruncher.com'
-base_directory = "data2/fantasycruncher"
+base_directory = "data/fantasycruncher"
 
 get_contests_endpoint = 'funcs/tournament-analyzer/get-contests.php'
 

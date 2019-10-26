@@ -37,6 +37,7 @@ game_columns = ['id', 'date', 'home_team_id', 'away_team_id', 'season']
 stat_line_columns = ['id', 'player_id', 'team_id', 'game_id', 'dk_positions',
                      'fd_positions', 'dk_salary', 'fd_salary', 'dk_points', 'fd_points', 'stats']
 site_columns = ['id', 'name', 'abbrv', 'lowcase_name']
+contest_columns = ['site_id', 'name', 'date', 'num_games', 'min_cash_score', 'start_time', 'entry_fee', 'places_paid', 'max_entrants', 'total_entrants', 'min_cash_payout', 'prize_pool', 'winning_score', 'slate', 'bulk', 'max_entries']
 
 def find_game_by_date_and_team(date, team_id):
     cursor.execute(select_game_by_date_and_team_str, (date, team_id, team_id,))

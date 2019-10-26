@@ -3,8 +3,9 @@ __pycache__
 .vscode/
 .pylintrc
 *.code-workspace
+*.zip
 
 data/
-data2/
+data/
 
 *.pyc

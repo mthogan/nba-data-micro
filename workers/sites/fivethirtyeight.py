@@ -14,7 +14,7 @@ import utils
 
 base_url = "https://projects.fivethirtyeight.com"
 base_extention = '2020-nba-predictions/'
-base_directory = "data2/fivethirtyeight"
+base_directory = "data/fivethirtyeight"
 
 table_headings = ['full_name', 'small_name', 'min_pg', 'min_sg', 'min_sf',
                   'min_pf', 'min_c', 'total_min', 'vs_full_strength', 'rtg_off', 'rtg_def']
@@ -39,7 +39,7 @@ def gather_projections():
     updated_at_time = datetime.datetime.strptime(
         time_info, "%b. %d, %Y, at %I:%M %p")
     time_string = updated_at_time.strftime('%Y-%m-%d')
-    directory = f"data2/fivethirtyeight/base"
+    directory = f"data/fivethirtyeight/base"
     utils.ensure_directory_exists(directory)
     filename = f'{time_string}.html'
     filepath = f"{directory}/{filename}"

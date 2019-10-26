@@ -24,8 +24,8 @@ stat_csv_keys = ['name', 'team', 'fd_points', 'dk_points', 'minutes', 'minutes_n
                  'fta', 'orb', 'drb', 'trb', 'ast', 'stl', 'blk', 'tov', 'pf', 'pts', 'pm', 'active']
 
 
-games_base_directory = 'data2/basketball_reference/games'
-box_scores_base_directory = 'data2/basketball_reference/box_scores'
+games_base_directory = 'data/basketball_reference/games'
+box_scores_base_directory = 'data/basketball_reference/box_scores'
 
 
 def box_scores_directory_from_date(date):

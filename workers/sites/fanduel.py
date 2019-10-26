@@ -24,7 +24,7 @@ def _team_abbrv_from_row(row):
     return row[9]
 
 
-base_directory = f'data2/salaries'
+base_directory = f'data/salaries'
 
 
 def loop_files_for_season(season):

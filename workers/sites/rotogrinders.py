@@ -23,7 +23,7 @@ login_data = {'username': username, 'password': password}
 
 
 base_url = "https://rotogrinders.com/projected-stats/nba-player.csv?site=%s&date=%s"
-base_directory = 'data2/rotogrinders'
+base_directory = 'data/rotogrinders'
 
 base_json_url = 'https://d1qacz8ndd7avl.cloudfront.net/lineuphq/v1.00/%s/3/base/nba-player.json'
 

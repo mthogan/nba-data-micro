@@ -11,7 +11,7 @@ import helpers
 import utils
 
 
-base_directory = f'data2/salaries'
+base_directory = f'data/salaries'
 
 
 def _name_from_row(row):

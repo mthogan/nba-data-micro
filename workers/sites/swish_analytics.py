@@ -13,7 +13,7 @@ from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name
 import utils
 import helpers
 
-base_directory = 'data2/swishanalytics'
+base_directory = 'data/swishanalytics'
 
 base_url = 'https://swishanalytics.com/optimus/nba/daily-fantasy-salary-changes'
 
