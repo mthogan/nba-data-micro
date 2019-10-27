@@ -1,9 +1,13 @@
-from workers.sites.fantasycruncher import gather_past_results_on_date, gather_past_results_for_month, load_past_results_on_date, load_past_results_for_month
+from workers.sites.basketball_reference import gather_box_scores_by_date#, gather_past_results_for_month, load_past_results_on_date, load_past_results_for_month
 
-date = '2019-01-02'
+date = '2019-02-15'
 #load_past_results_on_date(date)
 
-
-year = 2016
-for month in [10,11,12]:
+gather_box_scores_by_date(date)
+'''
+year = 2019
+for month in [2]:
+    
     load_past_results_for_month(year, month)
+
+'''

@@ -7,7 +7,7 @@ create_team_str = "insert into teams(name, abbrv, rg_abbrv, br_abbrv) values (%s
 create_player_by_column_name_str = "insert into players(%s) values(%%s)"
 create_or_update_stat_line_str = "insert into stat_lines(player_id, team_id, game_id, dk_points, fd_points, stats, minutes, active) values(%s, %s, %s, %s, %s, %s, %s, %s) on conflict (player_id, game_id) do update set dk_points = excluded.dk_points, fd_points = excluded.fd_points, stats = excluded.stats, minutes = excluded.minutes, active = excluded.active;"
 create_stat_line_salary_position_str = "insert into stat_lines(player_id, team_id, game_id, %s_positions, %s_salary) values (%%s, %%s, %%s, %%s, %%s) on conflict do nothing"
-create_or_update_projection_str = "insert into projections(stat_line_id, source, bulk, minutes, dk_points, fd_points) values(%s, %s, %s, %s, %s, %s) on conflict (stat_line_id, source) do update set bulk = excluded.bulk, minutes = excluded.minutes, dk_points = excluded.dk_points, fd_points = excluded.fd_points;"
+create_or_update_projection_str = "insert into projections(stat_line_id, source, bulk, minutes, dk_points, fd_points) values(%s, %s, %s, %s, %s, %s) on conflict (stat_line_id, source, version) do update set bulk = excluded.bulk, minutes = excluded.minutes, dk_points = excluded.dk_points, fd_points = excluded.fd_points;"
 
 create_or_update_contest_str = "insert into contests (site_id, name, date, num_games, min_cash_score, start_time, entry_fee, places_paid, max_entrants, total_entrants, min_cash_payout, prize_pool, winning_score, slate, bulk, max_entries) \
                         values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) \

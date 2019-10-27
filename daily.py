@@ -12,30 +12,32 @@ from workers.sites.fantasycruncher import gather_past_results_on_date as gather_
 
 
 # From yesterday
-yesterday = '2019-10-25'
+yesterday = '2019-10-26'
 # this is for players who haven't been there before, but were added from the salaries the day before
-#gather_box_scores_by_date(yesterday)
-#scrape_box_scores_by_date(yesterday)
-#load_br_players_on_date(yesterday)
-#load_stat_lines_on_date(yesterday)
+'''
+gather_box_scores_by_date(yesterday)
+scrape_box_scores_by_date(yesterday)
+load_br_players_on_date(yesterday)
+load_stat_lines_on_date(yesterday)
 
-#gather_fc_past_results_on_date(yesterday)
-#load_fc_past_results_on_date(yesterday)
-
+gather_fc_past_results_on_date(yesterday)
+load_fc_past_results_on_date(yesterday)
+'''
 # For today
 
-today = '2019-10-26'
+today = '2019-10-27'
 
 # after adding the salaries for the day, we want to load the players.
 
 
+'''
 load_fd_players_on_date(today, force=True)
 load_dk_players_on_date(today)
 
 load_fd_salaries_positions_for_date(today)
 load_dk_salaries_positions_for_date(today)
 
-
+'''
 # now to gather the projections ...
 gather_538_projections()
 scrape_538_projections_for_date(today)
