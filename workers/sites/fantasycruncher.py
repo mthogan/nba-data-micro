@@ -70,3 +70,7 @@ def load_past_results_on_date(date):
             slate = contest['slate']
             create_or_update_contest(site['id'], name, date, bulk=bulk, num_games=num_games, min_cash_score=min_cash_score, start_time=start_time, entry_fee=entry_fee, places_paid=places_paid,
                                      max_entrants=max_entrants, total_entrants=total_entrants, min_cash_payout=min_cash_payout, prize_pool=prize_pool, winning_score=winning_score, slate=slate, max_entries=max_entries)
+
+def gather_load_results_for_date(date):
+    gather_past_results_on_date(date)
+    load_past_results_on_date(date)

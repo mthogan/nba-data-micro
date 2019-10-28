@@ -335,3 +335,11 @@ def load_games_for_season(season):
                 game = find_game_by_date_and_team(date, away_team['id'])
                 if not game:
                     create_game(date, home_team['id'], away_team['id'], season)
+
+
+def gather_srape_load_for_date(date):
+    print(f'Gathering, scraping, loading BR box scores and stat lines for {date}')
+    gather_box_scores_by_date(date)
+    scrape_box_scores_by_date(date)
+    load_br_players_on_date(date)
+    load_stat_lines_on_date(date)

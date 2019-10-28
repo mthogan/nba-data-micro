@@ -178,3 +178,9 @@ def load_projections_for_date(date):
             stat_line_id = stat_line['id']
             create_or_update_projection(stat_line_id, source, bulk, minutes, None, None)
             
+def gather_scrape_load_for_date(date):
+    print(f'Gathering, scraping, and loading 536 projections for {date}')
+    gather_projections()
+    scrape_projections_for_date(date)
+    load_players_on_date(date)
+    load_projections_for_date(date)

@@ -241,3 +241,10 @@ def load_json_projections(date, overall_info):
     stat_line_id = stat_line['id']
     create_or_update_projection(stat_line_id, source, bulk, minutes, dk_pts, fd_pts)
 
+
+def gather_load_projections_for_date(date):
+    print(f'Gathering and loading RG projections for {date}')
+    gather_csv_projections_on_date(date)
+    gather_json_projections_on_date(date)
+    load_json_projections_on_date(date)
+    
