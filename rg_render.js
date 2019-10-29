@@ -21084,7 +21084,7 @@
             return "[object Array]" === Object.prototype.toString.call(e)
         };
         return n({
-            displayName: "ReactSlider",
+            displayName: "Reactstat_line_ider",
             propTypes: {
                 min: t.number,
                 max: t.number,
@@ -21105,7 +21105,7 @@
                 onBeforeChange: t.func,
                 onChange: t.func,
                 onAfterChange: t.func,
-                onSliderClick: t.func
+                onstat_line_iderClick: t.func
             },
             getDefaultProps: function() {
                 return {
@@ -21115,7 +21115,7 @@
                     minDistance: 0,
                     defaultValue: 0,
                     orientation: "horizontal",
-                    className: "slider",
+                    className: "stat_line_ider",
                     handleClassName: "handle",
                     handleActiveClassName: "active",
                     barClassName: "bar",
@@ -21133,7 +21133,7 @@
                 return {
                     index: -1,
                     upperBound: 0,
-                    sliderLength: 0,
+                    stat_line_iderLength: 0,
                     value: e,
                     zIndices: t
                 }
@@ -21171,7 +21171,7 @@
                 return a(this.state.value)
             },
             _resize: function() {
-                var e = this.slider,
+                var e = this.stat_line_ider,
                     t = this.handle0,
                     n = e.getBoundingClientRect(),
                     r = this._sizeKey(),
@@ -21179,9 +21179,9 @@
                     a = n[this._posMinKey()];
                 this.setState({
                     upperBound: e[r] - t[r],
-                    sliderLength: Math.abs(o - a),
+                    stat_line_iderLength: Math.abs(o - a),
                     handleSize: t[r],
-                    sliderStart: this.props.invert ? o : a
+                    stat_line_iderStart: this.props.invert ? o : a
                 })
             },
             _handleResize: function() {
@@ -21227,8 +21227,8 @@
                 return n
             },
             _calcOffsetFromPosition: function(e) {
-                var t = e - this.state.sliderStart;
-                return this.props.invert && (t = this.state.sliderLength - t), t -= this.state.handleSize / 2
+                var t = e - this.state.stat_line_iderStart;
+                return this.props.invert && (t = this.state.stat_line_iderLength - t), t -= this.state.handleSize / 2
             },
             _forceValueFromPosition: function(e, t) {
                 var n = this._calcOffsetFromPosition(e),
@@ -21375,7 +21375,7 @@
                 this._move(Math.max(e, this.props.min))
             },
             _getValueFromPosition: function(e) {
-                var t = e / (this.state.sliderLength - this.state.handleSize) * (this.props.max - this.props.min);
+                var t = e / (this.state.stat_line_iderLength - this.state.handleSize) * (this.props.max - this.props.min);
                 return this._trimAlignValue(this.state.startValue + t)
             },
             _getDiffPosition: function(e) {
@@ -21470,7 +21470,7 @@
                     onTouchStart: this._createOnTouchStart(r),
                     onFocus: this._createOnKeyDown(r),
                     tabIndex: 0,
-                    role: "slider",
+                    role: "stat_line_ider",
                     "aria-valuenow": this.state.value[r],
                     "aria-valuemin": this.props.min,
                     "aria-valuemax": this.props.max,
@@ -21507,7 +21507,7 @@
                 for (var r = 0; r < n; r++) t.push(this._renderBar(r + 1, e[r], e[r + 1]));
                 return t.push(this._renderBar(n + 1, e[n], this.state.upperBound)), t
             },
-            _onSliderMouseDown: function(e) {
+            _onstat_line_iderMouseDown: function(e) {
                 if (!this.props.disabled) {
                     if (this.hasMoved = !1, !this.props.snapDragDisabled) {
                         var t = this._getMousePosition(e);
@@ -21518,11 +21518,11 @@
                     r(e)
                 }
             },
-            _onSliderClick: function(e) {
-                if (!this.props.disabled && this.props.onSliderClick && !this.hasMoved) {
+            _onstat_line_iderClick: function(e) {
+                if (!this.props.disabled && this.props.onstat_line_iderClick && !this.hasMoved) {
                     var t = this._getMousePosition(e),
                         n = this._trimAlignValue(this._calcValue(this._calcOffsetFromPosition(t[0])));
-                    this.props.onSliderClick(n)
+                    this.props.onstat_line_iderClick(n)
                 }
             },
             _fireChangeEvent: function(e) {
@@ -21534,14 +21534,14 @@
                     u = this._renderHandles(o);
                 return e.createElement("div", {
                     ref: function(e) {
-                        t.slider = e
+                        t.stat_line_ider = e
                     },
                     style: {
                         position: "relative"
                     },
                     className: r.className + (r.disabled ? " disabled" : ""),
-                    onMouseDown: this._onSliderMouseDown,
-                    onClick: this._onSliderClick
+                    onMouseDown: this._onstat_line_iderMouseDown,
+                    onClick: this._onstat_line_iderClick
                 }, l, u)
             }
         })
@@ -36644,7 +36644,7 @@
                         [s, [c, "BlackBerry"],
                             [u, f]
                         ],
-                        [/android.+(transfo[prime\s]{4,10}\s\w+|eeepc|slider\s\w+|nexus 7|padfone|p00c)/i],
+                        [/android.+(transfo[prime\s]{4,10}\s\w+|eeepc|stat_line_ider\s\w+|nexus 7|padfone|p00c)/i],
                         [s, [c, "Asus"],
                             [u, d]
                         ],
@@ -50050,7 +50050,7 @@
             style: Ks
         }, {
             title: "See More Filters",
-            text: "Click to use team filters, salary and fpts sliders, and show/hide columns.",
+            text: "Click to use team filters, salary and fpts stat_line_iders, and show/hide columns.",
             textAlign: "center",
             selector: ".pool-tabs .icn-menu",
             position: "bottom",
@@ -80913,8 +80913,8 @@
             for (var r = arguments.length, o = new Array(r), a = 0; a < r; a++) o[a] = arguments[a];
             return n = function(e, t) {
                 return !t || "object" !== Zq(t) && "function" != typeof t ? nH(e) : t
-            }(this, (e = tH(t)).call.apply(e, [this].concat(o))), oH(nH(n), "slideHandler", (function(e) {
-                n.props.slideHandler ? n.props.slideHandler(e) : n.props.slideValidator(e) && n.props.valueHandler(e, !1)
+            }(this, (e = tH(t)).call.apply(e, [this].concat(o))), oH(nH(n), "stat_line_ideHandler", (function(e) {
+                n.props.stat_line_ideHandler ? n.props.stat_line_ideHandler(e) : n.props.stat_line_ideValidator(e) && n.props.valueHandler(e, !1)
             })), oH(nH(n), "stopHandler", (function(e) {
                 n.props.stopHandler ? n.props.stopHandler(e) : n.props.valueHandler(e, !0)
             })), n
@@ -80932,13 +80932,13 @@
         }(t, e), n = t, (r = [{
             key: "render",
             value: function() {
-                var e = ["slider"];
-                return "min" === this.props.range && e.push("slider--min"), "max" === this.props.range && e.push("slider--max"), Array.isArray(this.props.value) && this.props.value.length > 1 && e.push("slider--range"), i.a.createElement(Jq.a, {
+                var e = ["stat_line_ider"];
+                return "min" === this.props.range && e.push("stat_line_ider--min"), "max" === this.props.range && e.push("stat_line_ider--max"), Array.isArray(this.props.value) && this.props.value.length > 1 && e.push("stat_line_ider--range"), i.a.createElement(Jq.a, {
                     className: e.join(" "),
                     min: this.props.min,
                     max: this.props.max,
                     value: this.props.value,
-                    onChange: this.slideHandler,
+                    onChange: this.stat_line_ideHandler,
                     step: this.props.step,
                     onAfterChange: this.stopHandler,
                     withBars: !0
@@ -81017,8 +81017,8 @@
         max: p.a.number,
         min: p.a.number,
         range: p.a.oneOf(["min", "max"]),
-        slideHandler: p.a.func,
-        slideValidator: p.a.func,
+        stat_line_ideHandler: p.a.func,
+        stat_line_ideValidator: p.a.func,
         step: p.a.number,
         stopHandler: p.a.func,
         value: p.a.oneOfType([p.a.arrayOf(p.a.number), p.a.number]),
@@ -81029,7 +81029,7 @@
         range: null,
         step: 1,
         value: 0,
-        slideValidator: function() {
+        stat_line_ideValidator: function() {
             return !0
         }
     });
@@ -81080,9 +81080,9 @@
                     t = e.title,
                     n = e.tooltip;
                 return t || n ? i.a.createElement("div", {
-                    className: "full-slider__header"
+                    className: "full-stat_line_ider__header"
                 }, t && i.a.createElement("b", {
-                    className: "full-slider__title"
+                    className: "full-stat_line_ider__title"
                 }, this.props.title), n && i.a.createElement("b", {
                     className: "icn icn-info2",
                     "data-tip": !0,
@@ -81094,8 +81094,8 @@
             value: function(e) {
                 var t = Array.isArray(this.props.value) && 2 === this.props.value.length;
                 if (!t && "max" === e) return null;
-                var n = ["full-slider__value-label"];
-                return t && n.push("full-slider__value-label--".concat(e)), i.a.createElement("span", {
+                var n = ["full-stat_line_ider__value-label"];
+                return t && n.push("full-stat_line_ider__value-label--".concat(e)), i.a.createElement("span", {
                     className: fc()(n)
                 }, this.getValueLabel(e))
             }
@@ -81114,8 +81114,8 @@
                 var e = this.props,
                     t = (e.formatter, e.tooltip),
                     n = (e.showValues, e.title, lH(e, ["formatter", "tooltip", "showValues", "title"])),
-                    r = ["full-slider"];
-                return Array.isArray(this.props.value) && this.props.value.length > 1 && r.push("full-slider--range"), this.props.nonCompactForm && r.push("full-slider--non-compact"), i.a.createElement("div", {
+                    r = ["full-stat_line_ider"];
+                return Array.isArray(this.props.value) && this.props.value.length > 1 && r.push("full-stat_line_ider--range"), this.props.nonCompactForm && r.push("full-stat_line_ider--non-compact"), i.a.createElement("div", {
                     className: fc()(r),
                     id: t ? t.id : void 0
                 }, this.renderHeader(), this.props.showValues && this.renderValueLabel("min"), this.props.showValues && this.renderValueLabel("max"), i.a.createElement(aH, sH({}, n, {
@@ -81197,12 +81197,12 @@
                 return n = function(e, t) {
                     return !t || "object" !== mH(t) && "function" != typeof t ? bH(e) : t
                 }(this, (e = gH(t)).call.apply(e, [this].concat(o))), wH(bH(n), "formatter", (function(e, t) {
-                    var r = n.props.sliderValues[e];
+                    var r = n.props.stat_line_iderValues[e];
                     return 0 === t && r === -1 / 0 ? SH : 1 === t && r === 1 / 0 ? _H : r
                 })), wH(bH(n), "updateHandler", (function(e, t) {
                     t && n.props.updateHandler({
-                        min: n.props.sliderValues[e[0]],
-                        max: n.props.sliderValues[e[1]]
+                        min: n.props.stat_line_iderValues[e[0]],
+                        max: n.props.stat_line_iderValues[e[1]]
                     })
                 })), n
             }
@@ -81217,7 +81217,7 @@
                     }
                 }), t && vH(e, t)
             }(t, e), n = t, a = [{
-                key: "findNearestSliderIndex",
+                key: "findNeareststat_line_iderIndex",
                 value: function(e, t) {
                     var n = t.indexOf(e);
                     if (-1 !== n) return n;
@@ -81230,7 +81230,7 @@
             }], (r = [{
                 key: "render",
                 value: function() {
-                    var e = this.props.sliderValues;
+                    var e = this.props.stat_line_iderValues;
                     return i.a.createElement(hH, {
                         max: e.length - 1,
                         showValues: !0,
@@ -81239,7 +81239,7 @@
                             id: this.props.id,
                             text: this.props.info
                         },
-                        value: [this.constructor.findNearestSliderIndex(this.props.value[0], e), this.constructor.findNearestSliderIndex(this.props.value[1], e)],
+                        value: [this.constructor.findNeareststat_line_iderIndex(this.props.value[0], e), this.constructor.findNeareststat_line_iderIndex(this.props.value[1], e)],
                         valueHandler: this.updateHandler,
                         formatter: this.formatter,
                         nonCompactForm: !0
@@ -81290,7 +81290,7 @@
     }
     wH(EH, "propTypes", {
         updateHandler: p.a.func.isRequired,
-        sliderValues: p.a.arrayOf(p.a.number).isRequired,
+        stat_line_iderValues: p.a.arrayOf(p.a.number).isRequired,
         value: p.a.arrayOf(p.a.number).isRequired,
         id: p.a.string.isRequired,
         info: p.a.string.isRequired,
@@ -81345,7 +81345,7 @@
                     title: n,
                     info: r,
                     value: [a[0] ? a[0] : o[0], a[1] ? a[1] : o[o.length - 1]],
-                    sliderValues: o,
+                    stat_line_iderValues: o,
                     updateHandler: this.updateHandler
                 })
             }
@@ -81362,7 +81362,7 @@
             range: e.salaries,
             values: [e.minSalary, e.maxSalary],
             updateHandler: e.updateHandler,
-            info: "Use the salary slider to exclude players outside the specified salary range."
+            info: "Use the salary stat_line_ider to exclude players outside the specified salary range."
         }), i.a.createElement(CH, {
             id: "lb-filter-fpts",
             label: "FPTS",
@@ -81370,7 +81370,7 @@
             range: e.fpts,
             values: [e.minFpts, e.maxFpts],
             updateHandler: e.updateHandler,
-            info: "Use the fantasy points slider to exclude players outside the specified fantasy point range. Note that this could refer to average fantasy points per game or the RotoGrinders projections depending the page."
+            info: "Use the fantasy points stat_line_ider to exclude players outside the specified fantasy point range. Note that this could refer to average fantasy points per game or the RotoGrinders projections depending the page."
         }), i.a.createElement(CH, {
             id: "lb-filter-pts-per-dollar",
             label: "PT/$",
@@ -81380,7 +81380,7 @@
             updateHandler: e.updateHandler,
             isOpen: e.isOpen,
             setPlayerPoolDimensions: e.setPlayerPoolDimensions,
-            info: "Use the value slider to exclude players outside the specified value range. Player value is defined as (FPTS / (salary / 1000)). A high point per dollar ratio indicates strong value, whereas a low point per dollar ratio indicates weak value."
+            info: "Use the value stat_line_ider to exclude players outside the specified value range. Player value is defined as (FPTS / (salary / 1000)). A high point per dollar ratio indicates strong value, whereas a low point per dollar ratio indicates weak value."
         }))
     }
 
@@ -82861,7 +82861,7 @@
                     changeHandler: this.props.updateSearch,
                     placeholder: "Search Players..."
                 })), i.a.createElement("div", {
-                    id: "sliders-toggle-container"
+                    id: "stat_line_iders-toggle-container"
                 }, i.a.createElement("button", {
                     className: "drawer-toggle",
                     onClick: this.props.toggleFilterDrawer
@@ -83331,7 +83331,7 @@
                     title: "Number of lineups to produce",
                     tooltip: {
                         id: "lhq-settings-output",
-                        text: 'Use the output count slider to change the number of lineups produced when using the "Generate Lineups" button. Premium subscribers can build up to 300 lineups at a time, otherwise max is 10 lineups.'
+                        text: 'Use the output count stat_line_ider to change the number of lineups produced when using the "Generate Lineups" button. Premium subscribers can build up to 300 lineups at a time, otherwise max is 10 lineups.'
                     },
                     updateHandler: this.updateHandler,
                     value: s
@@ -83344,7 +83344,7 @@
                     title: "Number of Unique Players",
                     tooltip: {
                         id: "lhq-settings-variability",
-                        text: "Use this slider to determine the minimum amount of players that must be different between any two lineups. For example, a setting of three means that any two lineups must have at least three unique players when comparing them."
+                        text: "Use this stat_line_ider to determine the minimum amount of players that must be different between any two lineups. For example, a setting of three means that any two lineups must have at least three unique players when comparing them."
                     },
                     updateHandler: this.updateHandler,
                     value: c
@@ -83359,7 +83359,7 @@
                     title: "Max exposure",
                     tooltip: {
                         id: "settings-max-exposure",
-                        text: 'Use the "Max Exposure" slider to set a maximum exposure for any non-locked and non-exposed players in the generated set of output lineups.'
+                        text: 'Use the "Max Exposure" stat_line_ider to set a maximum exposure for any non-locked and non-exposed players in the generated set of output lineups.'
                     },
                     updateHandler: this.updateHandler,
                     value: p
@@ -83552,7 +83552,7 @@
                         max: 100,
                         name: t.position,
                         value: t.value,
-                        slideValidator: e.validator,
+                        stat_line_ideValidator: e.validator,
                         updateHandler: e.updateHandler,
                         formatter: o
                     }))
@@ -83987,7 +83987,7 @@
                 return Wd()(e).format("$0,0")
             })), QB(WB(n), "percentFormatter", (function(e) {
                 return "".concat(e, "%")
-            })), QB(WB(n), "slideValidator", (function(e) {
+            })), QB(WB(n), "stat_line_ideValidator", (function(e) {
                 return e <= 50
             })), n
         }
@@ -84045,7 +84045,7 @@
                         name: t,
                         allFlexSettings: l.flex,
                         positions: l.flex[t],
-                        slideValidator: e.slideValidator,
+                        stat_line_ideValidator: e.stat_line_ideValidator,
                         updateHandler: c,
                         valueFormatter: e.percentFormatter
                     })

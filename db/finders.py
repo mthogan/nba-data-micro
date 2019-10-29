@@ -66,6 +66,7 @@ def find_teams_playing_on_date(date):
     teams = cursor.fetchall()
     return [dict(zip(team_columns, team)) for team in teams]
 
+
 def find_team_by_name(name):
     cursor.execute(select_team_by_name_str, (name,))
     team_info = cursor.fetchone()
@@ -100,14 +101,6 @@ def find_player_by_site_abbrv_name(site_abbrv, name):
     return dict(zip(player_columns, player_info))
 
 
-def find_player_by_rg_name(name):
-    cursor.execute(select_player_by_rg_name_str, (name,))
-    player_info = cursor.fetchone()
-    if not player_info:
-        return None
-    return dict(zip(player_columns, player_info))
-
-
 def find_player_by_br_name(name):
     cursor.execute(select_player_by_br_name_str, (name,))
     player_info = cursor.fetchone()
@@ -130,12 +123,6 @@ def find_stat_line_by_player_and_game(player_id, game_id):
     if not stat_line_info:
         return None
     return dict(zip(stat_line_columns, stat_line_info))
-
-
-def find_all_player_rg_names():
-    cursor.execute(select_all_player_rg_names_str)
-    players = cursor.fetchall()
-    return players
 
 
 def find_player_by_exact_name(name):

@@ -46,9 +46,9 @@ BEGIN
 		FROM
 			stat_line_points slp
 		WHERE
-			slp.slid in(
+			slp.stat_line_id in(
 				SELECT
-					slid FROM stat_line_points slp2
+					stat_line_id FROM stat_line_points slp2
 				WHERE
 					season = slp.season
 					AND slp2."date" < before_date
@@ -239,9 +239,9 @@ FROM (
 			FROM
 				stat_line_points slp
 			WHERE
-				slp.slid in(
+				slp.stat_line_id in(
 					SELECT
-						slid FROM stat_line_points slp2
+						stat_line_id FROM stat_line_points slp2
 					WHERE
 						season = g.season
 						AND slp2. "date" < g.date
@@ -326,9 +326,9 @@ FROM (
 			FROM
 				stat_line_points slp
 			WHERE
-				slp.slid in(
+				slp.stat_line_id in(
 					SELECT
-						slid FROM stat_line_points slp2
+						stat_line_id FROM stat_line_points slp2
 					WHERE
 						season = g.season
 						AND slp2. "date" < g.date
@@ -403,9 +403,9 @@ FROM (
 			FROM
 				stat_line_points slp
 			WHERE
-				slp.slid in(
+				slp.stat_line_id in(
 					SELECT
-						slid FROM stat_line_points slp2
+						stat_line_id FROM stat_line_points slp2
 					WHERE
 						season = g.season
 						AND slp2. "date" < g.date
@@ -566,7 +566,7 @@ CREATE VIEW public.stat_line_points AS
     round(sl.fd_points, 2) AS fd_points,
     round((sl.fd_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS fdpp36,
     p.id AS player_id,
-    sl.id AS slid,
+    sl.id AS stat_line_id,
     g.season
    FROM public.stat_lines sl,
     public.games g,
@@ -761,7 +761,7 @@ CREATE VIEW public.slpp AS
                  LIMIT 2))
           GROUP BY sl2.player_id) AS avgfdpp36,
     p.id AS player_id,
-    sl.id AS slid,
+    sl.id AS stat_line_id,
     g.season
    FROM public.stat_lines sl,
     public.games g,

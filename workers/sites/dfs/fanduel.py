@@ -1,32 +1,27 @@
-import os
-import csv
-
-import utils
-import helpers
-
-from db.finders import find_player_by_exact_name, find_team_by_abbrv, find_game_by_date_and_team, find_stat_line_by_player_and_game
-from db.updaters import update_stat_line_position_salary
-from db.creators import create_stat_line_with_position_salary
+from workers.sites.dfs.dfs_site import DfsSite
 
 
-def _name_from_row(row):
-    name = row[3]
-    if not name:
-        name = f'{row[2]} {row[4]}'  # examples is 2019-01-25.csv
-    return name
+class FanDuel(DfsSite):
+
+    def __init__(self):
+        super().__init__('fd')
+
+    def _name_from_row(self, row):
+        name = row[3]
+        if not name:
+            name = f'{row[2]} {row[4]}'  # examples is 2019-01-25.csv
+        return name
 
 
-def _position_salary_from_row(row):
-    return (row[1], row[7])
+    def _position_salary_from_row(self, row):
+        return (row[1], row[7])
 
 
-def _team_abbrv_from_row(row):
-    return row[9]
+    def _team_abbrv_from_row(self, row):
+        return row[9]
 
 
-base_directory = f'data/salaries'
-
-
+'''
 def loop_files_for_season(season):
     directory = f'{base_directory}/{season}/fd'
     for _, _, files in os.walk(directory):
@@ -86,3 +81,4 @@ def load_salaries_positions_for_date_with_filepath(date, filepath):
                 print(f'No existing stat_line for {name}. Creating one now.')
                 create_stat_line_with_position_salary(
                     'fd', player['id'], team['id'], game['id'], pos, sal)
+'''

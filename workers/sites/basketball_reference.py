@@ -341,5 +341,5 @@ def gather_srape_load_for_date(date):
     print(f'Gathering, scraping, loading BR box scores and stat lines for {date}')
     gather_box_scores_by_date(date)
     scrape_box_scores_by_date(date)
-    load_br_players_on_date(date)
+    load_players_on_date(date)
     load_stat_lines_on_date(date)
