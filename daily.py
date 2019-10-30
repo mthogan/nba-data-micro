@@ -12,33 +12,30 @@ from workers.sites.rotogrinders import gather_load_projections_for_date as gathe
 
 
 # Dates currently strings, not using datetime today functions
-yesterday = '2019-10-28'
-today = '2019-10-29'
+yesterday = '2019-10-29'
+today = '2019-10-30'
 
-'''
+
 # work for yesterday is getting the box scores and updating the statlines
 gather_srape_load_br_for_date(yesterday)
+
 # and then also getting the fantasy cruncher results from contests yesterday as well
 gather_load_fc_results_for_date(yesterday)
-'''
-
-date = '2019-10-28'
-load_past_results_on_date(date)
 
 
-today = '2019-10-26'
+
 fd = FanDuel()
-#fd.load_players_on_date(today, force=True)
-#fd.load_salaries_positions_for_date(today)
+fd.load_players_on_date(today, force=True)
+fd.load_salaries_positions_for_date(today)
 
 dk = DraftKings()
-#dk.load_players_on_date(today)
-#dk.load_salaries_positions_for_date(today)
+dk.load_players_on_date(today)
+dk.load_salaries_positions_for_date(today)
 
 
 # now to gather the projections ...
 # 538 first
-#gather_scrape_load_538_for_date(today)
+gather_scrape_load_538_for_date(today)
 
 #RG next
-#gather_load_rg_projections_for_date(today)
+gather_load_rg_projections_for_date(today)

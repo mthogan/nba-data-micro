@@ -6,12 +6,8 @@ import datetime
 import requests
 from lxml import html
 
-from db.finders import find_team_by_name, find_game_by_date_and_team, find_player_by_br_name, \
-    find_player_by_exact_name, \
-    find_team_by_site_abbrv, find_stat_line_by_player_and_game
+from db.db import actor
 
-from db.creators import create_game, create_player_by_name, create_or_update_stat_line_with_stats
-from db.updaters import update_player_name, update_game
 import helpers
 import utils
 
@@ -53,6 +49,7 @@ def gather_box_scores_by_date(date):
     year, month, day = date.split('-')
     main_url = base_url + \
         '/boxscores/index.cgi?month=%s&day=%s&year=%s' % (month, day, year)
+    print(main_url)
     box_score_urls = get_box_score_urls(main_url)
     for box_score_url in box_score_urls:
         gather_box_score(date, box_score_url)
@@ -74,9 +71,9 @@ def gather_box_score(date, box_score_url):
     tree = html.fromstring(page.content)
     teams = tree.xpath('//div[@itemprop="performer"]/strong/a')
     away_team_name = teams[0].text
-    away_team = find_team_by_name(away_team_name)
+    away_team = actor.find_team_by_name(away_team_name)
     home_team_name = teams[1].text
-    home_team = find_team_by_name(home_team_name)
+    home_team = actor.find_team_by_name(home_team_name)
 
     print(f"{away_team['br_abbrv']} vs {home_team['br_abbrv']}")
 
@@ -148,9 +145,9 @@ def find_game_from_box_score(date, box_score_html):
     teams = box_score_html.xpath('//div[@itemprop="performer"]/strong/a')
     away_team_name = teams[0].text
     home_team_name = teams[1].text
-    away_team = find_team_by_name(away_team_name)
-    home_team = find_team_by_name(home_team_name)
-    game = find_game_by_date_and_team(date, away_team['id'])
+    away_team = actor.find_team_by_name(away_team_name)
+    home_team = actor.find_team_by_name(home_team_name)
+    game = actor.find_game_by_date_and_team(date, away_team['id'])
     return game, away_team, home_team
 
 
@@ -257,21 +254,22 @@ def load_stat_lines_for_month(year, month):
 def load_stat_lines_on_date(date):
     print(f'Loading stat_lines on {date}')
     for stat_line in loop_stat_lines_on_date(date):
+        print(f'{stat_line}')
         stat_dict = dict(zip(stat_csv_keys, stat_line))
         player_name = stat_dict.pop('name')
-        player = find_player_by_br_name(player_name)
+        player = actor.find_player_by_br_name(player_name)
         team_abbrv = stat_dict.pop('team')
-        team = find_team_by_site_abbrv('br', team_abbrv)
+        team = actor.find_team_by_site_abbrv('br', team_abbrv)
         minutes = stat_dict.pop('minutes_numeric')
         active = True if stat_dict.pop('active') == 'True' else False
-        game = find_game_by_date_and_team(date, team['id'])
+        game = actor.find_game_by_date_and_team(date, team['id'])
         if not player or not game:
             import pdb
             pdb.set_trace()
-        stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
+        stat_line = actor.find_stat_line_by_player_and_game(player['id'], game['id'])
         dk_points = stat_dict.pop('dk_points')
         fd_points = stat_dict.pop('fd_points')
-        create_or_update_stat_line_with_stats(
+        actor.create_or_update_stat_line_with_stats(
             player['id'], team['id'], game['id'], dk_points, fd_points, stat_dict, minutes, active=active)
 
 
@@ -337,13 +335,13 @@ def load_games_for_season(season):
 
                 away_team_name = game_info[2].xpath('./a')[0].text
                 home_team_name = game_info[4].xpath('./a')[0].text
-                home_team = find_team_by_name(home_team_name)
-                away_team = find_team_by_name(away_team_name)
-                game = find_game_by_date_and_team(date, away_team['id'])
+                home_team = actor.find_team_by_name(home_team_name)
+                away_team = actor.find_team_by_name(away_team_name)
+                game = actor.find_game_by_date_and_team(date, away_team['id'])
                 if not game:
-                    create_game(date, home_team['id'], away_team['id'], season, start_time)
+                    actor.create_game(date, home_team['id'], away_team['id'], season, start_time)
                 else:
-                    update_game(game['id'], date, home_team['id'], away_team['id'], season, start_time)
+                    actor.update_game(game['id'], date, home_team['id'], away_team['id'], season, start_time)
 
 
 

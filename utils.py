@@ -5,12 +5,7 @@ import csv
 
 import helpers
 
-from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name, \
-    find_player_by_clean_name, find_player_by_unaccented_name, \
-    find_player_by_lowercase_name
-
-from db.creators import create_player_by_name
-from db.updaters import update_player_name
+from db.db import actor
 
 
 def ensure_directory_exists(directory):
@@ -31,11 +26,11 @@ def perform_action_for_season(season, by_date_function, *args, **kwargs):
 
 def _add_player_to_column(site_name_column, player_id, name):
     print(f'Adding {name}')
-    player = update_player_name(site_name_column, player_id, name)
+    player = actor.update_player_name(site_name_column, player_id, name)
     return True
 
 
-name_finding_functions = [find_player_by_exact_name, find_player_by_clean_name, find_player_by_unaccented_name, find_player_by_lowercase_name]
+name_finding_functions = [actor.find_player_by_exact_name, actor.find_player_by_clean_name, actor.find_player_by_unaccented_name, actor.find_player_by_lowercase_name]
 
 
 def load_players_by_name(site_abbrv, name, force=False):
@@ -45,7 +40,7 @@ def load_players_by_name(site_abbrv, name, force=False):
     site_name_column = f'{site_abbrv}_name'
     # look for player with {site_abbrv}_name first, since if that matches
     # we're done.
-    player = find_player_by_site_abbrv_name(site_abbrv, name)
+    player = actor.find_player_by_site_abbrv_name(site_abbrv, name)
     if player:
         return player
     for nff in name_finding_functions:
@@ -55,7 +50,7 @@ def load_players_by_name(site_abbrv, name, force=False):
     print(f'No name match {name}')
     if force:
         print(f'Force creating player in {site_name_column}: {name}')
-        create_player_by_name(site_name_column, name)
+        actor.create_player_by_name(site_name_column, name)
     return None
 
 

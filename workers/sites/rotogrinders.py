@@ -6,10 +6,8 @@ import json
 import re
 import calendar
 
-from db.finders import find_stat_line_by_player_and_game, find_player_by_exact_name, \
-    find_team_by_site_abbrv, find_game_by_date_and_team, find_stat_line_by_player_and_date
-from db.updaters import update_stat_line_position_salary
-from db.creators import create_or_update_projection
+from db.db import actor
+
 import utils
 import helpers
 
@@ -149,15 +147,15 @@ def load_salaries_on_date(date):
 
 def update_stat_line(date, site_abbrv, row):
     name, sal, team_abbrv, pos = row[:4]
-    player = find_player_by_exact_name(name.strip())
-    team = find_team_by_site_abbrv('rg', team_abbrv)
-    game = find_game_by_date_and_team(date, team['id'])
+    player = actor.find_player_by_exact_name(name.strip())
+    team = actor.find_team_by_site_abbrv('rg', team_abbrv)
+    game = actor.find_game_by_date_and_team(date, team['id'])
     if not player or not game:
         print(f'No player {name} or game on {date}')
         return
-    stat_line = find_stat_line_by_player_and_game(player['id'], game['id'])
+    stat_line = actor.find_stat_line_by_player_and_game(player['id'], game['id'])
     if stat_line:
-        update_stat_line_position_salary(site_abbrv, stat_line['id'], pos, sal)
+        actor.update_stat_line_position_salary(site_abbrv, stat_line['id'], pos, sal)
 
 def load_json_projections_for_month(year, month):
     for date in helpers.iso_dates_in_month(year, month):
@@ -190,13 +188,13 @@ def load_json_projections(date, overall_info):
     last_name = player_info['last_name']
     name = f'{first_name} {last_name}'.strip()
     #find the player
-    player = find_player_by_exact_name(name)
+    player = actor.find_player_by_exact_name(name)
     if not player:
         print(f'Player {name} not found')
         return
 
     #find the stat_line
-    stat_line = find_stat_line_by_player_and_date(player['id'], date)
+    stat_line = actor.find_stat_line_by_player_and_date(player['id'], date)
     if not stat_line:
         print(f'Stat line for {name} on {date} not found.')
         return
@@ -239,7 +237,8 @@ def load_json_projections(date, overall_info):
 
     
     stat_line_id = stat_line['id']
-    create_or_update_projection(stat_line_id, source, bulk, minutes, dk_pts, fd_pts)
+    version = '0.1-rg'
+    actor.create_or_update_projection(stat_line_id, source, bulk, minutes, dk_pts, fd_pts, version)
 
 
 def gather_load_projections_for_date(date):

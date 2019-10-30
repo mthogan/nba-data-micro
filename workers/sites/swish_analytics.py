@@ -7,9 +7,6 @@ import os
 import requests
 from lxml import html
 
-from db.finders import find_player_by_site_abbrv_name, find_player_by_exact_name, find_player_by_clean_name, \
-    find_player_by_unaccented_name, find_player_by_lowercase_name
-
 import utils
 import helpers
 

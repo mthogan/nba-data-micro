@@ -1,13 +1,10 @@
 import os
 import csv
 
+from db.db import actor
+
 import utils
 import helpers
-
-from db.finders import find_player_by_exact_name, find_team_by_abbrv, find_game_by_date_and_team, find_stat_line_by_player_and_game
-from db.updaters import update_stat_line_position_salary
-from db.creators import create_stat_line_with_position_salary
-
 
 class DfsSite():
 
@@ -75,19 +72,19 @@ class DfsSite():
                 name = self._name_from_row(row)
                 pos, sal = self._position_salary_from_row(row)
                 team_abbrv = self._team_abbrv_from_row(row)
-                player = find_player_by_exact_name(name)
-                team = find_team_by_abbrv(team_abbrv)
-                game = find_game_by_date_and_team(date, team['id'])
+                player = actor.find_player_by_exact_name(name)
+                team = actor.find_team_by_abbrv(team_abbrv)
+                game = actor.find_game_by_date_and_team(date, team['id'])
                 print(name)
                 if not player or not game:
                     import pdb
                     pdb.set_trace()
-                stat_line = find_stat_line_by_player_and_game(
+                stat_line = actor.find_stat_line_by_player_and_game(
                     player['id'], game['id'])
                 if stat_line:
-                    update_stat_line_position_salary(
+                    actor.update_stat_line_position_salary(
                         self.site_abbrv, stat_line['id'], pos, sal)
                 else:
                     print(f'No existing stat_line for {name}. Creating one now.')
-                    create_stat_line_with_position_salary(
+                    actor.create_stat_line_with_position_salary(
                         self.site_abbrv, player['id'], team['id'], game['id'], pos, sal)

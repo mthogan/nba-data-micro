@@ -3,8 +3,8 @@ import datetime
 import os
 import json
 
-from db.finders import find_site_by_lowcase_name
-from db.creators import create_or_update_contest
+from db.db import actor
+
 import utils
 import helpers
 
@@ -57,7 +57,7 @@ def load_past_results_on_date(date):
             split_site = contest['site'].split('_')
             lowcase_name = split_site[0]
             style = split_site[1] if len(split_site) > 1 else 'classic'
-            site = find_site_by_lowcase_name(lowcase_name)
+            site = actor.find_site_by_lowcase_name(lowcase_name)
             name = contest['name']
             bulk = contest
             date = contest['period']
@@ -73,7 +73,7 @@ def load_past_results_on_date(date):
             prize_pool = contest['prizepool']
             winning_score = contest['winning_score']
             slate = contest['slate']
-            create_or_update_contest(site['id'], name, date, bulk=bulk, num_games=num_games, min_cash_score=min_cash_score, start_time=start_time, entry_fee=entry_fee, places_paid=places_paid,
+            actor.create_or_update_contest(site['id'], name, date, bulk=bulk, num_games=num_games, min_cash_score=min_cash_score, start_time=start_time, entry_fee=entry_fee, places_paid=places_paid,
                                      max_entrants=max_entrants, total_entrants=total_entrants, min_cash_payout=min_cash_payout, prize_pool=prize_pool, winning_score=winning_score, slate=slate, max_entries=max_entries, style=style)
 
 def gather_load_results_for_date(date):

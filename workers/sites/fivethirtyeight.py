@@ -8,8 +8,9 @@ from collections import defaultdict
 from copy import deepcopy
 import json
 
-from db.finders import find_team_by_name, find_all_teams, find_player_by_exact_name, find_stat_line_by_player_and_date, find_teams_playing_on_date
-from db.creators import create_or_update_projection
+# from db.finders import find_team_by_name, find_player_by_exact_name, find_stat_line_by_player_and_date, find_teams_playing_on_date
+from db.db import actor
+#from db.creators import create_or_update_projection
 import utils
 
 base_url = "https://projects.fivethirtyeight.com"
@@ -64,7 +65,7 @@ def gather_team_pages(tree, time_string, directory):
         team_name = tree.xpath(
             '//*[@id="team"]/div/div[1]/h1/span[1]/text()')[0]
         print(team_name)
-        team = find_team_by_name(team_name)
+        team = actor.find_team_by_name(team_name)
         directory = f"{base_directory}/{team['abbrv']}"
         utils.ensure_directory_exists(directory)
         filename = f"{time_string}.html"
@@ -99,7 +100,7 @@ conversion_helper = dict(zip(csv_headers, csv_conversions))
 
 
 def _loop_all_team_files_for_date(date, extension='html'):
-    teams = find_teams_playing_on_date(date)
+    teams = actor.find_teams_playing_on_date(date)
     for team in teams:
         directory = f"{base_directory}/{team['abbrv']}"
         filepath = f'{directory}/{date}.{extension}'
@@ -156,7 +157,7 @@ def load_projections_for_date(date):
 
         for name, bulk in full_team_info.items():
             print(name)
-            player = find_player_by_exact_name(name)
+            player = actor.find_player_by_exact_name(name)
             if not player:
                 print(f'No {name}. Continuing')
                 continue
@@ -170,17 +171,18 @@ def load_projections_for_date(date):
             # Now we can know that the bulk dict has the correct info for the player.
             # We need to get the stat_line from player and date. Continue if that doesn't
             # exist, and if it does exist, create or update the associated projection.
-            stat_line = find_stat_line_by_player_and_date(player['id'], date)
+            stat_line = actor.find_stat_line_by_player_and_date(player['id'], date)
             if not stat_line:
                 print(f'No stat_line for {name} on {date}')
                 continue
             # projection time
             stat_line_id = stat_line['id']
-            create_or_update_projection(stat_line_id, source, bulk, minutes, None, None)
+            version = '0.1-fte'
+            actor.create_or_update_projection(stat_line_id, source, bulk, minutes, None, None, version=version)
             
 def gather_scrape_load_for_date(date):
     print(f'Gathering, scraping, and loading 536 projections for {date}')
-    gather_projections()
-    scrape_projections_for_date(date)
-    load_players_on_date(date)
+    #gather_projections()
+    #scrape_projections_for_date(date)
+    #load_players_on_date(date)
     load_projections_for_date(date)

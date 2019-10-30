@@ -34,4 +34,20 @@ def gather_advanced_lineups(season, **kwargs)# date_from=None, date_to=None):
     '''
 
 
+teams_url = 'https://data.nba.net/prod/v2/2019/teams.json'
 
+games_url = 'https://data.nba.net/prod/v2/%s/scoreboard.json'
+
+box_score_url = 'https://data.nba.net/prod/v1/20181028/0021800083_boxscore.json' # first parram is date without '-', second number is game_id
+
+date = '2019-10-29'
+
+print(base_url_games % date.replace('-', ''))
+
+# Gather: Download the game json info
+
+# Find the teams, date, and then game. Load the nba_game_id to games table.
+
+# to gether boxscores, get the date and game id and format that for the box score url
+
+# then parse out the data and get it to format that br has to be able to add that.
