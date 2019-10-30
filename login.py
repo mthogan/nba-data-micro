@@ -1,6 +1,8 @@
-from workers.sites.fanduel import FanDuel
+from workers.sites.fantasycruncher import load_past_results_for_month
 
 
-date = '2019-10-29'
-fd = FanDuel()
-fd.load_salaries_positions_for_date(date)
+year = 2019
+months = [10]
+
+for month in months:
+    load_past_results_for_month(year, month)

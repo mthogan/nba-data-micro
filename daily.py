@@ -2,7 +2,7 @@ import datetime
 
 
 from workers.sites.basketball_reference import gather_srape_load_for_date as gather_srape_load_br_for_date
-from workers.sites.fantasycruncher import gather_load_results_for_date as gather_load_fc_results_for_date
+from workers.sites.fantasycruncher import gather_load_results_for_date as gather_load_fc_results_for_date, load_past_results_on_date
 
 from workers.sites.dfs.fanduel import FanDuel
 from workers.sites.dfs.draftkings import DraftKings
@@ -22,18 +22,23 @@ gather_srape_load_br_for_date(yesterday)
 gather_load_fc_results_for_date(yesterday)
 '''
 
+date = '2019-10-28'
+load_past_results_on_date(date)
+
+
+today = '2019-10-26'
 fd = FanDuel()
-fd.load_players_on_date(today, force=True)
-fd.load_salaries_positions_for_date(today)
+#fd.load_players_on_date(today, force=True)
+#fd.load_salaries_positions_for_date(today)
 
 dk = DraftKings()
-dk.load_players_on_date(today)
-dk.load_salaries_positions_for_date(today)
+#dk.load_players_on_date(today)
+#dk.load_salaries_positions_for_date(today)
 
 
 # now to gather the projections ...
 # 538 first
-gather_scrape_load_538_for_date(today)
+#gather_scrape_load_538_for_date(today)
 
 #RG next
-gather_load_rg_projections_for_date(today)
+#gather_load_rg_projections_for_date(today)

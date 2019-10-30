@@ -17,3 +17,6 @@ class DraftKings(DfsSite):
 
     def _team_abbrv_from_row(self, row):
         return row[7]
+
+    def _player_site_id_from_row(self, row):
+        return row[3]

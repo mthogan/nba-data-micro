@@ -11,7 +11,7 @@ from db.finders import find_team_by_name, find_game_by_date_and_team, find_playe
     find_team_by_site_abbrv, find_stat_line_by_player_and_game
 
 from db.creators import create_game, create_player_by_name, create_or_update_stat_line_with_stats
-from db.updaters import update_player_name
+from db.updaters import update_player_name, update_game
 import helpers
 import utils
 
@@ -324,17 +324,27 @@ def load_games_for_season(season):
             game_infos = tree.xpath(
                 '//table[@id="schedule"]//tbody//tr[not(contains(@class, "thead"))]')
             date_format = '%a, %b %d, %Y'
+            start_time_format = '%I%p'
             for game_info in game_infos:
                 date_string = game_info[0].xpath('./a')[0].text
+                print(date_string)
                 date = datetime.datetime.strptime(date_string, date_format)
-                print(date)
+                start_time = game_info[1].text
+                better_start_time = f'{date_string} {start_time.upper()}M'
+                start_time_format = f'{date_format} %I:%M%p'
+                start_time = datetime.datetime.strptime(better_start_time, start_time_format)
+                print(start_time)
+
                 away_team_name = game_info[2].xpath('./a')[0].text
                 home_team_name = game_info[4].xpath('./a')[0].text
                 home_team = find_team_by_name(home_team_name)
                 away_team = find_team_by_name(away_team_name)
                 game = find_game_by_date_and_team(date, away_team['id'])
                 if not game:
-                    create_game(date, home_team['id'], away_team['id'], season)
+                    create_game(date, home_team['id'], away_team['id'], season, start_time)
+                else:
+                    update_game(game['id'], date, home_team['id'], away_team['id'], season, start_time)
+
 
 
 def gather_srape_load_for_date(date):
