@@ -12,8 +12,8 @@ from workers.sites.rotogrinders import gather_load_projections_for_date as gathe
 
 
 # Dates currently strings, not using datetime today functions
-yesterday = '2019-10-29'
-today = '2019-10-30'
+yesterday = '2019-10-30'
+today = '2019-10-31'
 
 
 # work for yesterday is getting the box scores and updating the statlines

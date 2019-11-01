@@ -34,37 +34,29 @@ COMMENT ON EXTENSION unaccent IS 'text search dictionary that removes accents';
 -- Name: avg_prev_pp36(integer, date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
-CREATE FUNCTION public.avg_prev_pp36(qpid integer, before_date date, limit_back integer) RETURNS numeric
+CREATE FUNCTION public.avg_prev_pp36(pid integer, before_date date, limit_back integer) RETURNS numeric
     LANGUAGE plpgsql
     AS $$
 BEGIN
-   RETURN 
-   
-   	(
-		SELECT
-			round(avg(slp.fdpp36), 2)
-		FROM
-			stat_line_points slp
-		WHERE
-			slp.stat_line_id in(
+   RETURN   
+(
 				SELECT
-					stat_line_id FROM stat_line_points slp2
+					*
+				FROM
+					stat_line_points slp
 				WHERE
 					season = slp.season
-					AND slp2."date" < before_date
-					AND slp2.fdpp36 IS NOT NULL
-					AND slp2.player_id = qpid
+					AND slp."date" < before_date
+					AND slp.fdpp36 IS NOT NULL
+					AND slp.player_id = pid
 				ORDER BY
 					date DESC
-				LIMIT limit_back)
-				and slp.player_id=qpid
-		GROUP BY
-			slp.player_id);
+				LIMIT limit_back);
    
 END; $$;
 
 
-ALTER FUNCTION public.avg_prev_pp36(qpid integer, before_date date, limit_back integer) OWNER TO jackschultz;
+ALTER FUNCTION public.avg_prev_pp36(pid integer, before_date date, limit_back integer) OWNER TO jackschultz;
 
 --
 -- Name: clean_differences(text); Type: FUNCTION; Schema: public; Owner: jackschultz
@@ -239,9 +231,9 @@ FROM (
 			FROM
 				stat_line_points slp
 			WHERE
-				slp.stat_line_id in(
+				slp.slid in(
 					SELECT
-						stat_line_id FROM stat_line_points slp2
+						slid FROM stat_line_points slp2
 					WHERE
 						season = g.season
 						AND slp2. "date" < g.date
@@ -280,6 +272,66 @@ $$;
 ALTER FUNCTION public.create_update_self_projection(on_date date, limit_back integer) OWNER TO jackschultz;
 
 --
+-- Name: date_to_season(date); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.date_to_season(gdate date) RETURNS text
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	current_year int := extract(year FROM gdate);
+	current_month int := extract(month FROM gdate);
+	prev_year int := extract(year FROM (gdate - interval '1 year'));
+	next_year int := extract(year FROM (gdate + interval '1 year'));
+	retval text;
+BEGIN
+	CASE WHEN current_month < 7 THEN
+		retval := (prev_year % 100) || '-' || (current_year % 100);
+ELSE
+	retval := (current_year % 100) || '-' || (next_year % 100);
+END CASE;
+RETURN retval;
+END;
+$$;
+
+
+ALTER FUNCTION public.date_to_season(gdate date) OWNER TO jackschultz;
+
+--
+-- Name: last_stat_line_points_before_date(integer, date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.last_stat_line_points_before_date(pid integer, before_date date, limit_back integer) RETURNS numeric
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+   RETURN   
+   	(
+		SELECT
+			*
+		FROM
+			stat_line_points slp
+		WHERE
+			slp.stat_line_id in(
+				SELECT
+					stat_line_id FROM stat_line_points slp2
+				WHERE
+					season = date_to_season(before_date)
+					AND slp2."date" < before_date
+					AND slp2.fdpp36 IS NOT NULL
+					AND slp2.player_id = pid
+				ORDER BY
+					date DESC
+				LIMIT limit_back)
+		GROUP BY
+			slp.player_id);
+   
+END; $$;
+
+
+ALTER FUNCTION public.last_stat_line_points_before_date(pid integer, before_date date, limit_back integer) OWNER TO jackschultz;
+
+--
 -- Name: remove_non_ascii_and_vowels(text); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
@@ -311,7 +363,7 @@ SELECT
 	round((avg_fd_pp36 * (minutes / 36.0)), 2) AS fd_points,
 	dk_points,
 	avg_fd_pp36 AS fdpp36,
-	'0.1-avg-' || limit_back AS version
+	'0.1-avg-' || lpad(limit_back::text, 2, '0') AS version
 FROM (
 	SELECT
 		sl.id AS stat_line_id,
@@ -321,23 +373,12 @@ FROM (
 				CASE WHEN count(*) < limit_back THEN
 					NULL
 				ELSE
-					round(avg(slp.fdpp36), 2)
+					round(avg(slps.fdpp36), 2)
 				END AS round
 			FROM
-				stat_line_points slp
-			WHERE
-				slp.stat_line_id in(
-					SELECT
-						stat_line_id FROM stat_line_points slp2
-					WHERE
-						season = g.season
-						AND slp2. "date" < g.date
-						AND slp2.fdpp36 IS NOT NULL
-						AND slp2.minutes > 5
-						AND slp2.player_id = sl.player_id
-					ORDER BY
-						date DESC
-					LIMIT limit_back)) AS avg_fd_pp36,
+				stat_line_points_before_date (sl.player_id, on_date, limit_back) as slps
+		)
+			AS avg_fd_pp36,
 			(
 				SELECT
 					aver
@@ -345,6 +386,72 @@ FROM (
 					dk_sal_stats
 				WHERE
 					sal = dk_salary) AS dk_points
+			FROM
+				stat_lines sl,
+				games g
+			WHERE
+				sl.game_id = g.id
+				AND sl.fd_salary IS NOT NULL
+				AND sl.active
+				AND g. "date" = on_date) x ON CONFLICT (source, stat_line_id, version)
+	DO
+	UPDATE
+	SET
+		stat_line_id = excluded.stat_line_id,
+		minutes = excluded.minutes,
+		fd_points = excluded.fd_points,
+		dk_points = excluded.dk_points,
+		fdpp36 = excluded.fdpp36;
+	GET DIAGNOSTICS num_rows = ROW_COUNT;
+	RETURN num_rows AS num_rows;
+END;
+$$;
+
+
+ALTER FUNCTION public.set_self_projections_avg(on_date date, limit_back integer) OWNER TO jackschultz;
+
+--
+-- Name: set_self_projections_avg_score(date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.set_self_projections_avg_score(on_date date, limit_back integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	num_rows integer;
+BEGIN
+	INSERT INTO projections (source, stat_line_id, minutes, fd_points, dk_points, version)
+SELECT
+	'self' AS source,
+	stat_line_id,
+	minutes,
+	fd_points,
+	dk_points,
+	'0.1-avg-actual-' || limit_back AS version
+FROM (
+	SELECT
+		sl.id AS stat_line_id,
+		round(sl.minutes, 2) AS minutes,
+		(SELECT
+				CASE WHEN count(*) < limit_back THEN
+					NULL
+				ELSE
+					round(avg(fd_points), 2)
+				END as aver
+			FROM
+				stat_line_points_before_date (sl.player_id,
+					on_date,
+					limit_back)) AS fd_points,
+		(SELECT
+				CASE WHEN count(*) < limit_back THEN
+					NULL
+				ELSE
+					round(avg(dk_points), 2)
+				END as aver
+			FROM
+				stat_line_points_before_date (sl.player_id,
+					on_date,
+					limit_back)) AS dk_points
 			FROM
 				stat_lines sl,
 				games g
@@ -367,7 +474,74 @@ END;
 $$;
 
 
-ALTER FUNCTION public.set_self_projections_avg(on_date date, limit_back integer) OWNER TO jackschultz;
+ALTER FUNCTION public.set_self_projections_avg_score(on_date date, limit_back integer) OWNER TO jackschultz;
+
+--
+-- Name: set_self_projections_avg_w_fte_minutes(date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.set_self_projections_avg_w_fte_minutes(on_date date, limit_back integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	num_rows integer;
+BEGIN
+	INSERT INTO projections (source, stat_line_id, minutes, fd_points, dk_points, fdpp36, version)
+SELECT
+	'self' AS source,
+	stat_line_id,
+	minutes,
+	round((avg_fd_pp36 * (minutes / 36.0)), 2) AS fd_points,
+	dk_points,
+	avg_fd_pp36 AS fdpp36,
+	'0.1-avg-fte-min-' || lpad(limit_back::text, 2, '0') AS version
+FROM (
+	SELECT
+		sl.id AS stat_line_id,
+		round((
+			SELECT proj.minutes FROM projections proj WHERE "source"='fte' AND proj.stat_line_id=sl.id
+		), 2) AS minutes,
+		(
+			SELECT
+				CASE WHEN count(*) < limit_back THEN
+					NULL
+				ELSE
+					round(avg(slps.fdpp36), 2)
+				END AS round
+			FROM
+				stat_line_points_before_date (sl.player_id, on_date, limit_back) as slps
+		)
+			AS avg_fd_pp36,
+			(
+				SELECT
+					aver
+				FROM
+					dk_sal_stats
+				WHERE
+					sal = dk_salary) AS dk_points
+			FROM
+				stat_lines sl,
+				games g
+			WHERE
+				sl.game_id = g.id
+				AND sl.fd_salary IS NOT NULL
+				AND sl.active
+				AND g. "date" = on_date) x ON CONFLICT (source, stat_line_id, version)
+	DO
+	UPDATE
+	SET
+		stat_line_id = excluded.stat_line_id,
+		minutes = excluded.minutes,
+		fd_points = excluded.fd_points,
+		dk_points = excluded.dk_points,
+		fdpp36 = excluded.fdpp36;
+	GET DIAGNOSTICS num_rows = ROW_COUNT;
+	RETURN num_rows AS num_rows;
+END;
+$$;
+
+
+ALTER FUNCTION public.set_self_projections_avg_w_fte_minutes(on_date date, limit_back integer) OWNER TO jackschultz;
 
 --
 -- Name: set_self_projections_med(date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
@@ -447,53 +621,105 @@ $$;
 ALTER FUNCTION public.set_self_projections_med(on_date date, limit_back integer) OWNER TO jackschultz;
 
 --
--- Name: contests; Type: TABLE; Schema: public; Owner: nbauser
+-- Name: set_self_projections_std_ceil(date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
-CREATE TABLE public.contests (
-    id integer NOT NULL,
-    site_id integer NOT NULL,
-    name character varying(255),
-    date date NOT NULL,
-    num_games integer,
-    min_cash_score double precision,
-    start_time bigint,
-    entry_fee double precision,
-    places_paid integer,
-    max_entrants integer,
-    total_entrants integer,
-    min_cash_payout double precision,
-    prize_pool integer,
-    winning_score double precision,
-    slate integer,
-    bulk jsonb,
-    max_entries integer
-);
+CREATE FUNCTION public.set_self_projections_std_ceil(on_date date, limit_back integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	num_rows integer;
+BEGIN
+	INSERT INTO projections (source, stat_line_id, minutes, fd_points, dk_points, fdpp36, version)
+SELECT
+	'self' AS source,
+	stat_line_id,
+	minutes,
+	
+	round(((avg_fd_pp36 + std_fd_pp36) * (minutes / 36.0)), 2) AS fd_points,
+	dk_points,
+	(avg_fd_pp36 + std_fd_pp36) AS fdpp36,
+	'0.1-std-ceil-' || limit_back AS version
+FROM (
+	SELECT
+		sl.id AS stat_line_id,
+		round(sl.minutes, 2) AS minutes,
+		(
+			SELECT
+				CASE WHEN count(*) < limit_back THEN
+					NULL
+				ELSE
+					round(avg(slp.fdpp36), 2)
+				END AS aver
+			FROM
+				stat_line_points slp
+			WHERE
+				slp.stat_line_id in(
+					SELECT
+						stat_line_id FROM stat_line_points slp2
+					WHERE
+						season = g.season
+						AND slp2. "date" < g.date
+						AND slp2.fdpp36 IS NOT NULL
+						AND slp2.minutes > 5
+						AND slp2.player_id = sl.player_id
+					ORDER BY
+						date DESC
+					LIMIT limit_back)) AS avg_fd_pp36,
+	
+		(
+			SELECT
+				CASE WHEN count(*) < limit_back THEN
+					NULL
+				ELSE
+					round(stddev(slp.fdpp36)::numeric, 2)
+				END AS aver
+			FROM
+				stat_line_points slp
+			WHERE
+				slp.stat_line_id in(
+					SELECT
+						stat_line_id FROM stat_line_points slp2
+					WHERE
+						season = g.season
+						AND slp2. "date" < g.date
+						AND slp2.fdpp36 IS NOT NULL
+						AND slp2.minutes > 5
+						AND slp2.player_id = sl.player_id
+					ORDER BY
+						date DESC
+					LIMIT limit_back)) AS std_fd_pp36,	
+	
+			(
+				SELECT
+					aver
+				FROM
+					dk_sal_stats
+				WHERE
+					sal = dk_salary) AS dk_points
+			FROM
+				stat_lines sl,
+				games g
+			WHERE
+				sl.game_id = g.id
+				AND sl.fd_salary IS NOT NULL
+				AND sl.active
+				AND g. "date" = on_date) x ON CONFLICT (source, stat_line_id, version)
+			DO
+			UPDATE
+			SET
+				stat_line_id = excluded.stat_line_id,
+				minutes = excluded.minutes,
+				fd_points = excluded.fd_points,
+				dk_points = excluded.dk_points,
+				fdpp36 = excluded.fdpp36;
+	GET DIAGNOSTICS num_rows = ROW_COUNT;
+	RETURN num_rows AS num_rows;
+END;
+$$;
 
 
-ALTER TABLE public.contests OWNER TO nbauser;
-
---
--- Name: contests_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
---
-
-CREATE SEQUENCE public.contests_id_seq
-    AS integer
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.contests_id_seq OWNER TO nbauser;
-
---
--- Name: contests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: nbauser
---
-
-ALTER SEQUENCE public.contests_id_seq OWNED BY public.contests.id;
-
+ALTER FUNCTION public.set_self_projections_std_ceil(on_date date, limit_back integer) OWNER TO jackschultz;
 
 --
 -- Name: games; Type: TABLE; Schema: public; Owner: nbauser
@@ -504,7 +730,8 @@ CREATE TABLE public.games (
     date date NOT NULL,
     home_team_id integer NOT NULL,
     away_team_id integer NOT NULL,
-    season character varying(10)
+    season character varying(10),
+    start_time timestamp without time zone
 );
 
 
@@ -527,7 +754,9 @@ CREATE TABLE public.stat_lines (
     fd_points numeric,
     stats jsonb,
     minutes numeric DEFAULT 0.0,
-    active boolean DEFAULT true
+    active boolean DEFAULT true,
+    dk_id character varying(31),
+    fd_id character varying(31)
 );
 
 
@@ -565,6 +794,7 @@ CREATE VIEW public.stat_line_points AS
     sl.fd_positions,
     round(sl.fd_points, 2) AS fd_points,
     round((sl.fd_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS fdpp36,
+    sl.active,
     p.id AS player_id,
     sl.id AS stat_line_id,
     g.season
@@ -576,6 +806,90 @@ CREATE VIEW public.stat_line_points AS
 
 
 ALTER TABLE public.stat_line_points OWNER TO nbauser;
+
+--
+-- Name: stat_line_points_before_date(integer, date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.stat_line_points_before_date(pid integer, before_date date, limit_back integer) RETURNS SETOF public.stat_line_points
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	RETURN QUERY (
+		SELECT
+			*
+		FROM
+			stat_line_points slp
+		WHERE
+			slp.stat_line_id in(
+				SELECT
+					stat_line_id FROM stat_line_points slp2
+				WHERE
+					season = date_to_season (before_date)
+					AND slp2. "date" < before_date
+					AND slp2.fdpp36 IS NOT NULL
+					AND slp2.player_id = pid
+				ORDER BY
+					date DESC
+				LIMIT limit_back)
+		ORDER BY
+			slp.date DESC);
+END;
+$$;
+
+
+ALTER FUNCTION public.stat_line_points_before_date(pid integer, before_date date, limit_back integer) OWNER TO jackschultz;
+
+--
+-- Name: contests; Type: TABLE; Schema: public; Owner: nbauser
+--
+
+CREATE TABLE public.contests (
+    id integer NOT NULL,
+    site_id integer NOT NULL,
+    name character varying(255),
+    date date NOT NULL,
+    num_games integer,
+    min_cash_score double precision,
+    start_time bigint,
+    entry_fee double precision,
+    places_paid integer,
+    max_entrants integer,
+    total_entrants integer,
+    min_cash_payout double precision,
+    prize_pool integer,
+    winning_score double precision,
+    slate integer,
+    bulk jsonb,
+    max_entries integer,
+    slate_title character varying(31),
+    style character varying(31)
+);
+
+
+ALTER TABLE public.contests OWNER TO nbauser;
+
+--
+-- Name: contests_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
+--
+
+CREATE SEQUENCE public.contests_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.contests_id_seq OWNER TO nbauser;
+
+--
+-- Name: contests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: nbauser
+--
+
+ALTER SEQUENCE public.contests_id_seq OWNED BY public.contests.id;
+
 
 --
 -- Name: dk_sal_stats; Type: MATERIALIZED VIEW; Schema: public; Owner: nbauser
@@ -670,7 +984,7 @@ CREATE TABLE public.projections (
     active boolean DEFAULT true,
     fdpp36 numeric,
     dkpp36 numeric,
-    version character varying(31)
+    version character varying(31) DEFAULT NULL::character varying
 );
 
 
@@ -733,44 +1047,6 @@ ALTER TABLE public.sites_id_seq OWNER TO nbauser;
 
 ALTER SEQUENCE public.sites_id_seq OWNED BY public.sites.id;
 
-
---
--- Name: slpp; Type: VIEW; Schema: public; Owner: nbauser
---
-
-CREATE VIEW public.slpp AS
- SELECT p.br_name AS name,
-    t.abbrv,
-    g.date,
-    round(sl.minutes, 2) AS minutes,
-    sl.dk_positions,
-    sl.dk_salary,
-    round(sl.dk_points, 2) AS dk_points,
-    round((sl.dk_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS dkpp36,
-    sl.fd_salary,
-    sl.fd_positions,
-    round(sl.fd_points, 2) AS fd_points,
-    round((sl.fd_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS fdpp36,
-    ( SELECT round(avg(round((sl2.fd_points * (36.0 / NULLIF(sl2.minutes, (0)::numeric))), 2)), 2) AS round
-           FROM public.stat_lines sl2
-          WHERE (sl2.id IN ( SELECT sl3.id
-                   FROM public.stat_lines sl3,
-                    public.games g3
-                  WHERE ((sl3.game_id = g3.id) AND (g3.date < g.date) AND (sl3.fd_points IS NOT NULL) AND (sl3.player_id = sl.player_id))
-                  ORDER BY g3.date DESC
-                 LIMIT 2))
-          GROUP BY sl2.player_id) AS avgfdpp36,
-    p.id AS player_id,
-    sl.id AS stat_line_id,
-    g.season
-   FROM public.stat_lines sl,
-    public.games g,
-    public.players p,
-    public.teams t
-  WHERE ((sl.game_id = g.id) AND (sl.player_id = p.id) AND (sl.team_id = t.id));
-
-
-ALTER TABLE public.slpp OWNER TO nbauser;
 
 --
 -- Name: stat_lines_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
@@ -1034,6 +1310,13 @@ CREATE INDEX projections_source_stat_line_id_version_idx ON public.projections U
 --
 
 CREATE INDEX projections_source_version_idx ON public.projections USING btree (source, version);
+
+
+--
+-- Name: projections_version_idx; Type: INDEX; Schema: public; Owner: nbauser
+--
+
+CREATE INDEX projections_version_idx ON public.projections USING btree (version);
 
 
 --

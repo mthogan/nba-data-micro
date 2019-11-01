@@ -182,7 +182,7 @@ def load_projections_for_date(date):
             
 def gather_scrape_load_for_date(date):
     print(f'Gathering, scraping, and loading 536 projections for {date}')
-    #gather_projections()
-    #scrape_projections_for_date(date)
-    #load_players_on_date(date)
+    gather_projections()
+    scrape_projections_for_date(date)
+    load_players_on_date(date)
     load_projections_for_date(date)

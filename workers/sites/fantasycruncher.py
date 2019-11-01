@@ -64,7 +64,7 @@ def load_past_results_on_date(date):
             num_games = contest['game_cnt']
             min_cash_score = contest['mincash_score']
             min_cash_payout = contest['mincash_payout']
-            start_time = contest['startdate']
+            start_time = datetime.datetime.fromtimestamp(contest['startdate'])
             entry_fee = contest['cost']
             places_paid = contest['places_paid']
             max_entrants = contest['max_entrants']
