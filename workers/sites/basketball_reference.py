@@ -120,25 +120,45 @@ def create_stat_dict(stat_html, active=True):
     return name, stat_dict
 
 
+def get_html_box_score_tree_by_date(date):
+    directory = box_scores_directory_from_date(date)
+    for _, _, files in os.walk(directory):
+        for filename in files:
+            if filename.endswith(".html"):
+                filepath = f'{directory}/{filename}'
+                print(filepath)
+                with open(filepath, 'r') as f:
+                    html_text = f.read()
+                    yield html.fromstring(html_text)
+
+
 def scrape_box_scores_for_season(season):
     for date in helpers.dates_in_season(season):
         scrape_box_scores_by_date(date)
 
 
 def scrape_box_scores_for_month(year, month):
-    for day in helpers.iso_dates_in_month(year, month):
-        scrape_box_scores_by_date(day)
+    for date in helpers.iso_dates_in_month(year, month):
+        scrape_box_scores_by_date(date)
 
 
 def scrape_box_scores_by_date(date):
-    directory = box_scores_directory_from_date(date)
-    for _, _, files in os.walk(directory):
-        for filename in files:
-            if filename.endswith(".html"):
-                filepath = f'{directory}/{filename}'
-                with open(filepath, 'r') as f:
-                    html_text = f.read()
-                    scrape_box_score(date, html_text)
+    for tree in get_html_box_score_tree_by_date(date):
+        _, away_team, home_team = find_game_from_box_score(date, tree)
+        print('Scraping stats on %s for %s at %s' %
+            (date, away_team['name'], home_team['name']))
+        #tables = tree.xpath('//table[contains(., "Basic Box Score Stats")]')
+        full_game_stats = []
+        full_game_stats.extend(run_team_stats(home_team, tree))
+        full_game_stats.extend(run_team_stats(away_team, tree))
+        directory = box_scores_directory_from_date(date)
+        filepath = directory + \
+            '/%sv%s.csv' % (away_team['abbrv'], home_team['abbrv'])
+        with open(filepath, 'w') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=stat_csv_keys)
+            writer.writeheader()
+            for data in full_game_stats:
+                writer.writerow(data)
 
 
 def find_game_from_box_score(date, box_score_html):
@@ -149,26 +169,6 @@ def find_game_from_box_score(date, box_score_html):
     home_team = actor.find_team_by_name(home_team_name)
     game = actor.find_game_by_date_and_team(date, away_team['id'])
     return game, away_team, home_team
-
-
-def scrape_box_score(date, html_text):
-    tree = html.fromstring(html_text)
-    _, away_team, home_team = find_game_from_box_score(date, tree)
-    print('Scraping stats on %s for %s at %s' %
-          (date, away_team['name'], home_team['name']))
-    #tables = tree.xpath('//table[contains(., "Basic Box Score Stats")]')
-    full_game_stats = []
-    full_game_stats.extend(run_team_stats(home_team, tree))
-    full_game_stats.extend(run_team_stats(away_team, tree))
-    directory = box_scores_directory_from_date(date)
-    filepath = directory + \
-        '/%sv%s.csv' % (away_team['abbrv'], home_team['abbrv'])
-    with open(filepath, 'w') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames=stat_csv_keys)
-        writer.writeheader()
-        for data in full_game_stats:
-            writer.writerow(data)
-    return
 
 
 def run_team_stats(team, tree):
@@ -344,6 +344,62 @@ def load_games_for_season(season):
                     actor.update_game(game['id'], date, home_team['id'], away_team['id'], season, start_time)
 
 
+def _get_scoring_from_comment_string(comment_string, home_team_abbrv, away_team_abbrv):
+    line_score_tree = html.fromstring(comment_string)
+    number_list = line_score_tree.text_content().split('\n')
+    scoring = {'home': [], 'away': []}
+    status = None
+    for val in number_list:
+
+        if val == away_team_abbrv:
+            status = away_team_abbrv #always set
+        elif status == away_team_abbrv and val != '':
+            scoring['away'].append(int(val))
+        elif status == away_team_abbrv and val == '':
+            status = None
+        if val == home_team_abbrv:
+            status = home_team_abbrv #always set
+        elif status == home_team_abbrv and val != '':
+            scoring['home'].append(int(val))
+        elif status == home_team_abbrv and val == '':
+            status = None
+    return scoring
+
+def _get_four_factors_from_comment_string(comment_string):
+    ffkeys = ['pace', 'efg', 'tov', 'orb', 'ftfga', 'ortg']
+    #ct is short hand for comment_tree
+    ct = html.fromstring(comment_string)
+    away_team_factors = ct.xpath('//tr[3]//td')
+    home_team_factors = ct.xpath('//tr[4]//td')
+
+    htfloats = [float(val.text) for val in home_team_factors]
+    atfloats = [float(val.text) for val in away_team_factors]
+    home_team_factors = dict(zip(ffkeys, htfloats))
+    away_team_factors = dict(zip(ffkeys, atfloats))
+    return home_team_factors, away_team_factors
+
+def load_game_scores_for_date(date):
+    for tree in get_html_box_score_tree_by_date(date):
+
+        game, away_team, home_team = find_game_from_box_score(date, tree)
+
+        line_score_comment_string = tree.xpath('//*[@id="all_line_score"]/comment()')[0].text
+        scoring = _get_scoring_from_comment_string(line_score_comment_string, home_team['br_abbrv'], away_team['br_abbrv'])
+        home_team_score = scoring['home'][-1]
+        away_team_score = scoring['away'][-1]
+
+        ffcs = tree.xpath('//*[@id="all_four_factors"]/comment()')[0].text
+        home_team_factors, away_team_factors = _get_four_factors_from_comment_string(ffcs)
+
+        print(scoring)
+        print(home_team_score)
+        print(away_team_score)
+        print(home_team_factors)
+        print(away_team_factors)
+
+        actor.update_game_with_scores(game['id'], home_team_score, away_team_score, scoring, home_team_factors, away_team_factors)
+
+
 
 def gather_srape_load_for_date(date):
     print(f'Gathering, scraping, loading BR box scores and stat lines for {date}')
@@ -351,3 +407,4 @@ def gather_srape_load_for_date(date):
     scrape_box_scores_by_date(date)
     load_players_on_date(date)
     load_stat_lines_on_date(date)
+    load_game_scores_for_date(date)

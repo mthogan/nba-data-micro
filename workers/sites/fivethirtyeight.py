@@ -165,7 +165,7 @@ def load_projections_for_date(date):
             minutes = int(bulk['current']['tot_min'])
             # ok confusing time. This looks through everything and converts them from strings to ints or floats. You can read the
             # comment above defining conversion_helper
-            for key, vals in bulk.items():
+            for _, vals in bulk.items():
                 for valkey, valval in vals.items():
                     vals[valkey] = conversion_helper[valkey](valval)
             # Now we can know that the bulk dict has the correct info for the player.
