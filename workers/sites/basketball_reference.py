@@ -2,6 +2,10 @@ import os
 import csv
 import calendar
 import datetime
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+
 
 import requests
 from lxml import html
@@ -45,11 +49,11 @@ def gather_box_scores_for_month(year, month):
 
 
 def gather_box_scores_by_date(date):
-    print("Gathering box scores for date %s" % date)
+    logger.info("Gathering box scores for date %s" % date)
     year, month, day = date.split('-')
     main_url = base_url + \
         '/boxscores/index.cgi?month=%s&day=%s&year=%s' % (month, day, year)
-    print(main_url)
+    logger.debug(f'Url for all box scores on {date}: {main_url}')
     box_score_urls = get_box_score_urls(main_url)
     for box_score_url in box_score_urls:
         gather_box_score(date, box_score_url)
@@ -64,7 +68,7 @@ def get_box_score_urls(main_url):
 
 
 def gather_box_score(date, box_score_url):
-    print(box_score_url)
+    logger.debug(f'Gathering box score from: {box_score_url}')
     directory = box_scores_directory_from_date(date)
     page = requests.get(base_url+box_score_url)
 
@@ -75,7 +79,7 @@ def gather_box_score(date, box_score_url):
     home_team_name = teams[1].text
     home_team = actor.find_team_by_name(home_team_name)
 
-    print(f"{away_team['br_abbrv']} vs {home_team['br_abbrv']}")
+    logger.info(f"Box score for {away_team['br_abbrv']} vs {home_team['br_abbrv']}")
 
     # now save the page in the filepath
     filepath = directory + \
@@ -126,7 +130,6 @@ def get_html_box_score_tree_by_date(date):
         for filename in files:
             if filename.endswith(".html"):
                 filepath = f'{directory}/{filename}'
-                print(filepath)
                 with open(filepath, 'r') as f:
                     html_text = f.read()
                     yield html.fromstring(html_text)
@@ -145,7 +148,7 @@ def scrape_box_scores_for_month(year, month):
 def scrape_box_scores_by_date(date):
     for tree in get_html_box_score_tree_by_date(date):
         _, away_team, home_team = find_game_from_box_score(date, tree)
-        print('Scraping stats on %s for %s at %s' %
+        logger.info('Scraping stats on %s for %s at %s' %
             (date, away_team['name'], home_team['name']))
         #tables = tree.xpath('//table[contains(., "Basic Box Score Stats")]')
         full_game_stats = []
@@ -252,9 +255,9 @@ def load_stat_lines_for_month(year, month):
 
 
 def load_stat_lines_on_date(date):
-    print(f'Loading stat_lines on {date}')
+    logger.info(f'Loading stat_lines on {date}')
     for stat_line in loop_stat_lines_on_date(date):
-        print(f'{stat_line}')
+        logger.debug(f'{stat_line}')
         stat_dict = dict(zip(stat_csv_keys, stat_line))
         player_name = stat_dict.pop('name')
         player = actor.find_player_by_br_name(player_name)
@@ -281,7 +284,7 @@ def load_players_for_season(season, force=False):
 
 
 def load_players_on_date(date, force=False):
-    print(f'Seeing players by date {date}')
+    logger.info(f'Loading players by date {date}')
     for stat_line in loop_stat_lines_on_date(date):
         name = stat_line[0]
         utils.load_players_by_name('br', name, force=force)
@@ -301,9 +304,8 @@ def gather_games_for_season(season):
     utils.ensure_directory_exists(directory)
     for month_num in range(1, 13):
         month_name = calendar.month_name[month_num].lower()
-        print(month_name)
         schedule_url = f"https://www.basketball-reference.com/leagues/NBA_{year}_games-{month_name}.html"
-        print(schedule_url)
+        logger.debug(schedule_url)
         page = requests.get(schedule_url)
         filepath = f"{directory}/{f'{month_num:02}'}.html"
         with open(filepath, 'w') as f:
@@ -325,13 +327,11 @@ def load_games_for_season(season):
             start_time_format = '%I%p'
             for game_info in game_infos:
                 date_string = game_info[0].xpath('./a')[0].text
-                print(date_string)
                 date = datetime.datetime.strptime(date_string, date_format)
                 start_time = game_info[1].text
                 better_start_time = f'{date_string} {start_time.upper()}M'
                 start_time_format = f'{date_format} %I:%M%p'
                 start_time = datetime.datetime.strptime(better_start_time, start_time_format)
-                print(start_time)
 
                 away_team_name = game_info[2].xpath('./a')[0].text
                 home_team_name = game_info[4].xpath('./a')[0].text
@@ -379,6 +379,7 @@ def _get_four_factors_from_comment_string(comment_string):
     return home_team_factors, away_team_factors
 
 def load_game_scores_for_date(date):
+    logger.info(f'Loading game scores for {date}')
     for tree in get_html_box_score_tree_by_date(date):
 
         game, away_team, home_team = find_game_from_box_score(date, tree)
@@ -390,19 +391,14 @@ def load_game_scores_for_date(date):
 
         ffcs = tree.xpath('//*[@id="all_four_factors"]/comment()')[0].text
         home_team_factors, away_team_factors = _get_four_factors_from_comment_string(ffcs)
-
-        print(scoring)
-        print(home_team_score)
-        print(away_team_score)
-        print(home_team_factors)
-        print(away_team_factors)
+        logger.info(f"{away_team['name']} vs. {home_team['name']} -- {away_team_score} - {home_team_score}")
 
         actor.update_game_with_scores(game['id'], home_team_score, away_team_score, scoring, home_team_factors, away_team_factors)
 
 
 
 def gather_srape_load_for_date(date):
-    print(f'Gathering, scraping, loading BR box scores and stat lines for {date}')
+    logger.info(f'Gathering, scraping, loading BR box scores and stat lines for {date}')
     gather_box_scores_by_date(date)
     scrape_box_scores_by_date(date)
     load_players_on_date(date)

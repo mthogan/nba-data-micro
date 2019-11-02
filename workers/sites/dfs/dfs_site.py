@@ -75,7 +75,6 @@ class DfsSite():
                 player = actor.find_player_by_exact_name(name)
                 team = actor.find_team_by_abbrv(team_abbrv)
                 game = actor.find_game_by_date_and_team(date, team['id'])
-                print(name)
                 if not player or not game:
                     import pdb
                     pdb.set_trace()
