@@ -88,7 +88,8 @@ CREATE TABLE public.players (
     br_name character varying(100),
     rg_name character varying(100),
     fte_name character varying(100),
-    alt_name character varying(100)
+    alt_name character varying(100),
+    dfn_name character varying(100)
 );
 
 
@@ -126,7 +127,8 @@ CREATE FUNCTION public.compare_exact_name_columns(player_name text) RETURNS SETO
  											 br_name  = player_name or
  											 rg_name  = player_name or
  											 fte_name = player_name or
- 											 alt_name = player_name;
+ 											 alt_name = player_name or
+ 											 dfn_name = player_name;
  END; $$;
 
 
@@ -477,6 +479,72 @@ $$;
 ALTER FUNCTION public.set_self_projections_avg_score(on_date date, limit_back integer) OWNER TO jackschultz;
 
 --
+-- Name: set_self_projections_avg_w_dfn_minutes(date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
+--
+
+CREATE FUNCTION public.set_self_projections_avg_w_dfn_minutes(on_date date, limit_back integer) RETURNS integer
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	num_rows integer;
+BEGIN
+	INSERT INTO projections (source, stat_line_id, minutes, fd_points, dk_points, fdpp36, version)
+SELECT
+	'self' AS source,
+	stat_line_id,
+	minutes,
+	round((avg_fd_pp36 * (minutes / 36.0)), 2) AS fd_points,
+	dk_points,
+	avg_fd_pp36 AS fdpp36,
+	'0.1-avg-dfn-min-' || lpad(limit_back::text, 2, '0') AS version
+FROM (
+	SELECT
+		sl.id AS stat_line_id,
+		round((
+			SELECT proj.minutes FROM projections proj WHERE "source"='dfn' AND "version"='0.1-dfn' AND proj.stat_line_id=sl.id), 2) AS minutes,
+		(
+			SELECT
+				CASE WHEN count(*) < limit_back THEN
+					NULL
+				ELSE
+					round(avg(slps.fdpp36), 2)
+				END AS round
+			FROM
+				stat_line_points_before_date (sl.player_id, on_date, limit_back) as slps
+		)
+			AS avg_fd_pp36,
+			(
+				SELECT
+					aver
+				FROM
+					dk_sal_stats
+				WHERE
+					sal = dk_salary) AS dk_points
+			FROM
+				stat_lines sl,
+				games g
+			WHERE
+				sl.game_id = g.id
+				AND sl.fd_salary IS NOT NULL
+				AND sl.active
+				AND g. "date" = on_date) x ON CONFLICT (source, stat_line_id, version)
+	DO
+	UPDATE
+	SET
+		stat_line_id = excluded.stat_line_id,
+		minutes = excluded.minutes,
+		fd_points = excluded.fd_points,
+		dk_points = excluded.dk_points,
+		fdpp36 = excluded.fdpp36;
+	GET DIAGNOSTICS num_rows = ROW_COUNT;
+	RETURN num_rows AS num_rows;
+END;
+$$;
+
+
+ALTER FUNCTION public.set_self_projections_avg_w_dfn_minutes(on_date date, limit_back integer) OWNER TO jackschultz;
+
+--
 -- Name: set_self_projections_avg_w_fte_minutes(date, integer); Type: FUNCTION; Schema: public; Owner: jackschultz
 --
 
@@ -731,7 +799,14 @@ CREATE TABLE public.games (
     home_team_id integer NOT NULL,
     away_team_id integer NOT NULL,
     season character varying(10),
-    start_time timestamp without time zone
+    start_time timestamp without time zone,
+    home_team_score integer,
+    away_team_score integer,
+    scoring jsonb,
+    home_team_factors jsonb,
+    away_team_factors jsonb,
+    num_ots integer DEFAULT 0,
+    length integer
 );
 
 
@@ -771,7 +846,8 @@ CREATE TABLE public.teams (
     name character varying(50) NOT NULL,
     abbrv character varying(10) NOT NULL,
     rg_abbrv character varying(10) NOT NULL,
-    br_abbrv character varying(10)
+    br_abbrv character varying(10),
+    dfn_abbrv character varying(10)
 );
 
 
@@ -782,7 +858,11 @@ ALTER TABLE public.teams OWNER TO nbauser;
 --
 
 CREATE VIEW public.stat_line_points AS
- SELECT p.br_name AS name,
+ SELECT
+        CASE
+            WHEN (p.br_name IS NOT NULL) THEN p.br_name
+            ELSE p.fd_name
+        END AS name,
     t.abbrv,
     g.date,
     round(sl.minutes, 2) AS minutes,
@@ -797,7 +877,9 @@ CREATE VIEW public.stat_line_points AS
     sl.active,
     p.id AS player_id,
     sl.id AS stat_line_id,
-    g.season
+    g.season,
+    g.id AS game_id,
+    t.id AS team_id
    FROM public.stat_lines sl,
     public.games g,
     public.players p,
@@ -851,7 +933,7 @@ CREATE TABLE public.contests (
     date date NOT NULL,
     num_games integer,
     min_cash_score double precision,
-    start_time bigint,
+    start_time timestamp without time zone,
     entry_fee double precision,
     places_paid integer,
     max_entrants integer,
@@ -926,6 +1008,66 @@ CREATE MATERIALIZED VIEW public.fd_sal_stats AS
 ALTER TABLE public.fd_sal_stats OWNER TO nbauser;
 
 --
+-- Name: game_fd_points; Type: VIEW; Schema: public; Owner: jackschultz
+--
+
+CREATE VIEW public.game_fd_points AS
+ SELECT x.date,
+    x.home_team_id,
+    x.away_team_id,
+    x.home_team_name,
+    x.home_fd_sum,
+    x.away_team_name,
+    x.away_fd_sum,
+    x.game_id
+   FROM ( SELECT g.date,
+            hot.id AS home_team_id,
+            ( SELECT teams.id
+                   FROM public.teams
+                  WHERE (teams.id = g.away_team_id)) AS away_team_id,
+            ( SELECT teams.name
+                   FROM public.teams
+                  WHERE (teams.id = hot.id)) AS home_team_name,
+            ( SELECT sum(slp.fd_points) AS sum
+                   FROM public.stat_line_points slp
+                  WHERE ((slp.date = g.date) AND (slp.team_id = hot.id))) AS home_fd_sum,
+            ( SELECT teams.name
+                   FROM public.teams
+                  WHERE (teams.id = g.away_team_id)) AS away_team_name,
+            ( SELECT sum(slp.fd_points) AS sum
+                   FROM public.stat_line_points slp
+                  WHERE ((slp.date = g.date) AND (slp.team_id = g.away_team_id))) AS away_fd_sum,
+            g.id AS game_id
+           FROM public.games g,
+            public.teams hot
+          WHERE (g.home_team_id = hot.id)
+          GROUP BY g.date, hot.id, g.away_team_id, g.id) x;
+
+
+ALTER TABLE public.game_fd_points OWNER TO jackschultz;
+
+--
+-- Name: game_infos; Type: VIEW; Schema: public; Owner: nbauser
+--
+
+CREATE VIEW public.game_infos AS
+ SELECT g.date,
+    g.start_time,
+    home_team.name AS home_team_name,
+    home_team.abbrv AS home_team_abbrv,
+    away_team.name AS away_team_name,
+    away_team.abbrv AS away_team_abbrv,
+    g.home_team_score,
+    g.away_team_score
+   FROM public.games g,
+    public.teams home_team,
+    public.teams away_team
+  WHERE ((g.home_team_id = home_team.id) AND (g.away_team_id = away_team.id));
+
+
+ALTER TABLE public.game_infos OWNER TO nbauser;
+
+--
 -- Name: games_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
 --
 
@@ -991,6 +1133,19 @@ CREATE TABLE public.projections (
 ALTER TABLE public.projections OWNER TO nbauser;
 
 --
+-- Name: projection_versions; Type: MATERIALIZED VIEW; Schema: public; Owner: nbauser
+--
+
+CREATE MATERIALIZED VIEW public.projection_versions AS
+ SELECT DISTINCT projections.version
+   FROM public.projections
+  WHERE ((projections.version)::text <> ''::text)
+  WITH NO DATA;
+
+
+ALTER TABLE public.projection_versions OWNER TO nbauser;
+
+--
 -- Name: projections_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
 --
 
@@ -1047,6 +1202,43 @@ ALTER TABLE public.sites_id_seq OWNER TO nbauser;
 
 ALTER SEQUENCE public.sites_id_seq OWNED BY public.sites.id;
 
+
+--
+-- Name: stat_line_infos; Type: VIEW; Schema: public; Owner: nbauser
+--
+
+CREATE VIEW public.stat_line_infos AS
+ SELECT
+        CASE
+            WHEN (p.br_name IS NOT NULL) THEN p.br_name
+            ELSE p.fd_name
+        END AS name,
+    t.abbrv,
+    g.date,
+    round(sl.minutes, 2) AS minutes,
+    sl.dk_positions,
+    sl.dk_salary,
+    round(sl.dk_points, 2) AS dk_points,
+    round((sl.dk_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS dkpp36,
+    sl.fd_salary,
+    sl.fd_positions,
+    round(sl.fd_points, 2) AS fd_points,
+    round((sl.fd_points * (36.0 / NULLIF(sl.minutes, (0)::numeric))), 2) AS fdpp36,
+    sl.active AS sl_active,
+    proj.active AS proj_active,
+    proj.version AS proj_version,
+    COALESCE(proj.dk_points, (0)::numeric) AS proj_dk_points,
+    COALESCE(proj.fd_points, (0)::numeric) AS proj_fd_points,
+    proj.minutes AS proj_minutes,
+    sl.id AS slid
+   FROM ((((public.stat_lines sl
+     JOIN public.games g ON ((sl.game_id = g.id)))
+     JOIN public.players p ON ((sl.player_id = p.id)))
+     JOIN public.teams t ON ((sl.team_id = t.id)))
+     LEFT JOIN public.projections proj ON ((sl.id = proj.stat_line_id)));
+
+
+ALTER TABLE public.stat_line_infos OWNER TO nbauser;
 
 --
 -- Name: stat_lines_id_seq; Type: SEQUENCE; Schema: public; Owner: nbauser
@@ -1310,6 +1502,13 @@ CREATE INDEX projections_source_stat_line_id_version_idx ON public.projections U
 --
 
 CREATE INDEX projections_source_version_idx ON public.projections USING btree (source, version);
+
+
+--
+-- Name: projections_stat_line_id_idx; Type: INDEX; Schema: public; Owner: nbauser
+--
+
+CREATE INDEX projections_stat_line_id_idx ON public.projections USING btree (stat_line_id);
 
 
 --
