@@ -19,6 +19,8 @@ def ensure_directory_exists(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+def check_if_filepath_exists(filepath):
+    return os.path.exists(filepath)
 
 # Loading players
 
@@ -52,12 +54,12 @@ def load_players_by_name(site_abbrv, name, force=False):
         player = nff(name)
         if player:
             return _add_player_to_column(site_name_column, player['id'], name)
-    logger.critical(f'No name match {name} in any of the columns')
+    logger.error(f'No name match {name} in any of the columns')
     if force:
-        logger.critical(f'Force adding player in {site_name_column}')
+        logger.warning(f'Force adding player in {site_name_column}')
         actor.create_player_by_name(site_name_column, name)
     else:
-        logger.critical(f'Not force updating, need to do by hand.')
+        logger.warning(f'Not force updating, need to do by hand.')
     return None
 
 

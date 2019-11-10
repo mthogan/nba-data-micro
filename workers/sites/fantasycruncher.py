@@ -3,6 +3,12 @@ import datetime
 import os
 import json
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+
+from collections import defaultdict
+
 from db.db import actor
 
 import utils
@@ -23,7 +29,7 @@ def gather_past_results_for_month(year, month):
 
 
 def gather_past_results_on_date(date):
-    print(f'Gathering FC past results on {date}.')
+    logger.info(f'Gathering FC past results on {date}.')
     params = {}
     params['periods'] = [date]
     params['leagues'] = ['NBA']
@@ -33,11 +39,12 @@ def gather_past_results_on_date(date):
     resp = requests.post(url, json=params)
 
     if not resp.status_code == 200:
-        print(f'Failed gather response for {date}. Returning.')
+        logger.info(f'Failed gather response for {date}. Returning.')
     filepath = utils.get_json_filepath_from_date(date, base_directory)
-    print(f'Saving results to {filepath}')
+    logger.info(f'Saving FD results to {filepath}')
     with open(filepath, 'w') as f:
         f.write(resp.text)
+    return filepath
 
 
 def load_past_results_for_month(year, month):
@@ -46,11 +53,15 @@ def load_past_results_for_month(year, month):
 
 
 def load_past_results_on_date(date):
-    print(f'Loading FC past results on {date}.')
+    logger.info(f'Loading FC past results on {date}.')
     filepath = utils.get_json_filepath_from_date(date, base_directory)
     if not os.path.exists(filepath):
-        print(f'No file for {date}. Returning.')
+        logger.info(f'No file for {date}. Returning.')
         return
+    load_past_results_from_filepath(filepath)
+
+def load_past_results_from_filepath(filepath):
+    contest_counts = defaultdict(int)
     with open(filepath, 'r') as f:
         contests = json.loads(f.read())
         for contest in contests:
@@ -72,9 +83,11 @@ def load_past_results_on_date(date):
             max_entries = contest['max_entries']
             prize_pool = contest['prizepool']
             winning_score = contest['winning_score']
-            slate = contest['slate']
+            slate_num = contest['slate']
             actor.create_or_update_contest(site['id'], name, date, bulk=bulk, num_games=num_games, min_cash_score=min_cash_score, start_time=start_time, entry_fee=entry_fee, places_paid=places_paid,
-                                     max_entrants=max_entrants, total_entrants=total_entrants, min_cash_payout=min_cash_payout, prize_pool=prize_pool, winning_score=winning_score, slate=slate, max_entries=max_entries, style=style)
+                                     max_entrants=max_entrants, total_entrants=total_entrants, min_cash_payout=min_cash_payout, prize_pool=prize_pool, winning_score=winning_score, slate_num=slate_num, max_entries=max_entries, style=style)
+            contest_counts[site['abbrv']] += 1
+    logger.info(contest_counts)
 
 def gather_load_results_for_date(date):
     gather_past_results_on_date(date)

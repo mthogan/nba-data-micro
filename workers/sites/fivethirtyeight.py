@@ -8,6 +8,10 @@ from collections import defaultdict
 from copy import deepcopy
 import json
 
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+
 # from db.finders import find_team_by_name, find_player_by_exact_name, find_stat_line_by_player_and_date, find_teams_playing_on_date
 from db.db import actor
 #from db.creators import create_or_update_projection
@@ -54,22 +58,22 @@ def gather_team_pages(tree, time_string, directory):
     We can get team pages from the links in a dropdown of the main
     page that we've already saved.
     '''
-    print('links')
     links = tree.xpath('//*[@id="standings-table"]/tbody//a/@href')
     for link in links:
         team_url = f"{base_url}{link}"
-        print(team_url)
+        logger.debug(f'url for not yet known team: {team_url}')
         page = requests.get(team_url)
         # find the team from the db so we have the abbrv
         tree = html.fromstring(page.content)
         team_name = tree.xpath(
             '//*[@id="team"]/div/div[1]/h1/span[1]/text()')[0]
-        print(team_name)
+        logger.debug(f'Found Team: {team_name}')
         team = actor.find_team_by_name(team_name)
         directory = f"{base_directory}/{team['abbrv']}"
         utils.ensure_directory_exists(directory)
         filename = f"{time_string}.html"
         filepath = f"{directory}/{filename}"
+        logger.info(f"Saving {team['name']} FTE html to {filepath}")
         with open(filepath, 'w') as f:
             f.write(page.text)
 
@@ -81,10 +85,10 @@ def scrape_projections_for_date(date):
     Name, mgp_current, mgp_full, mgp_full_playoff, opm, dpm
     where mgp_* are json
     '''
-    print(f'Scraping 538 projections for {date}')
+    logger.info(f'Scraping 538 projections for {date}')
     for filepath in _loop_all_team_files_for_date(date):
         team_abbrv = filepath.split('/')[2]
-        print(f'Scraping {team_abbrv} projs')
+        logger.info(f'Scraping {team_abbrv} projs')
         with open(filepath, 'r') as f:
             tree = html.fromstring(f.read())
             scrape_player_information_from_tree(tree, filepath)
@@ -131,7 +135,7 @@ def load_players_on_date(date):
     Looping through the csv files to get the player names added
     to the fte_name column.
     '''
-    print(f'Loading fte players on {date}')
+    logger.info(f'Loading fte players on {date}')
     for filepath in _loop_all_team_files_for_date(date, extension='csv'):
         with open(filepath, 'r') as f:
             reader = csv.reader(f)
@@ -142,9 +146,9 @@ def load_players_on_date(date):
 
 
 def load_projections_for_date(date):
-    print(f'Scraping 538 projections for {date}')
+    logger.info(f'Scraping 538 projections for {date}')
     for filepath in _loop_all_team_files_for_date(date, extension='csv'):
-        print(filepath)
+        logger.debug(filepath)
         full_team_info = defaultdict(lambda: defaultdict(list))
         with open(filepath, 'r') as f:
             reader = csv.reader(f)
@@ -156,10 +160,9 @@ def load_projections_for_date(date):
                 full_team_info[name][label] = zipped_info
 
         for name, bulk in full_team_info.items():
-            print(name)
             player = actor.find_player_by_exact_name(name)
             if not player:
-                print(f'No {name}. Continuing')
+                logger.warning(f'No {name} found when loading FTE projections. Continuing.')
                 continue
             # this is a main column on projections, so we want this specifically.
             minutes = int(bulk['current']['tot_min'])
@@ -173,15 +176,22 @@ def load_projections_for_date(date):
             # exist, and if it does exist, create or update the associated projection.
             stat_line = actor.find_stat_line_by_player_and_date(player['id'], date)
             if not stat_line:
-                print(f'No stat_line for {name} on {date}')
+                logger.warning(f'No stat_line for {name} on {date} found when loading FTE projections. Continuing.')
                 continue
             # projection time
             stat_line_id = stat_line['id']
             version = '0.1-fte'
             actor.create_or_update_projection(stat_line_id, source, bulk, minutes, None, None, version=version)
-            
+
+
+from workers.runner import Runner
+
+def generate_runner(date):
+    vals = ((gather_projections, (), {}), (scrape_projections_for_date, (date,)), (load_players_on_date, (date,)), (load_projections_for_date, (date,)))
+    return Runner(vals)
+
 def gather_scrape_load_for_date(date):
-    print(f'Gathering, scraping, and loading 536 projections for {date}')
+    logger.info(f'Gathering, scraping, and loading 536 projections for {date}')
     gather_projections()
     scrape_projections_for_date(date)
     load_players_on_date(date)
