@@ -42,9 +42,6 @@ class Runner(object):
         for index, vals in enumerate(self._fns):
             _fn, _args, _kwargs = vals
             print(f'Running {_fn.__name__} with args {_args} and kwargs {_kwargs}.')
-            print(_fn)
-            print(_args)
-            print(_kwargs)
             try:
                 if _args and _kwargs:
                     _fn(*_args, **_kwargs)

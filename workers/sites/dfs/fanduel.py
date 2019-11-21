@@ -13,10 +13,8 @@ class FanDuel(DfsSite):
             name = f'{row[2]} {row[4]}'  # examples is 2019-01-25.csv
         return name
 
-
     def _position_salary_from_row(self, row):
         return (row[1], row[7])
-
 
     def _team_abbrv_from_row(self, row):
         return row[9]
@@ -161,31 +159,35 @@ def load_player_info_for_date(date):
     team_info = player_info['teams']
     team_abbrvs = _get_team_abbrvs_by_id(team_info)
     players = player_info['players']
-    for player in players:
-        first_name = player['first_name']
-        last_name = player['last_name']
+    for player_ in players:
+        first_name = player_['first_name']
+        last_name = player_['last_name']
         fullname = f'{first_name} {last_name}'.strip()
-        sal = player['salary']
+        sal = player_['salary']
         try:
-            pos = player['position']
+            pos = player_['position']
         except:
             import pdb;pdb.set_trace()
             asdf = 5
         # find team
-        team_id = player['team']['_members'][0]
+        player_slate_id = player_['id']
+        team_id = player_['team']['_members'][0]
         team_abbrv = team_abbrvs[team_id]
         print(f'{fullname}, {team_abbrv}, {pos}, {sal}')
-        player = actor.find_player_by_site_abbrv_name('fd', fullname)
+        player = actor.find_player_by_exact_name(fullname)
         team = actor.find_team_by_abbrv(team_abbrv)
         game = actor.find_game_by_date_and_team(date, team['id'])
+        if not player or not game:
+            import pdb;pdb.set_trace()
+            continue
         stat_line = actor.find_stat_line_by_player_and_game(
             player['id'], game['id'])
         if stat_line:
             print(stat_line)
-            actor.update_stat_line_position_salary('fd', stat_line['id'], pos, sal)
+            actor.update_stat_line_position_salary('fd', stat_line['id'], pos, sal, player_slate_id)
         else:
             print(f'No existing stat_line for {player["fd_name"]}. Creating one now.')
-            actor.create_stat_line_with_position_salary('fd', player['id'], team['id'], game['id'], pos, sal)
+            actor.create_stat_line_with_position_salary('fd', player['id'], team['id'], game['id'], pos, sal, player_slate_id)
     asdf = 5
 
     #print(player_info)

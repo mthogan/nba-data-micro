@@ -12,6 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 from db.db import actor
+from workers.runner import Runner
 
 import utils
 import helpers
@@ -252,3 +253,6 @@ def gather_load_projections_for_date(date):
     gather_json_projections_on_date(date)
     load_json_projections_on_date(date)
     
+def generate_runner(date):
+    vals = ((gather_csv_projections_on_date, (date,)), (gather_json_projections_on_date, (date,)), (load_json_projections_on_date, (date,)))
+    return Runner(vals)

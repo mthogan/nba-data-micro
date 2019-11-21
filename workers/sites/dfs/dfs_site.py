@@ -26,6 +26,9 @@ class DfsSite():
     def _team_abbrv_from_row(self, row):
         raise NameError('_team_abbrv_from_row is not defined')
 
+    def _player_site_id_from_row(self, row):
+        raise NameError('_player_site_id_from_row is not defined')
+
 
     def loop_files_for_season(self, season):
         directory = f'{DfsSite.base_directory}/{season}/{self.site_abbrv}'
@@ -72,6 +75,7 @@ class DfsSite():
                 name = self._name_from_row(row)
                 pos, sal = self._position_salary_from_row(row)
                 team_abbrv = self._team_abbrv_from_row(row)
+                player_site_id = self._player_site_id_from_row(row)
                 player = actor.find_player_by_exact_name(name)
                 team = actor.find_team_by_abbrv(team_abbrv)
                 game = actor.find_game_by_date_and_team(date, team['id'])
@@ -82,8 +86,8 @@ class DfsSite():
                     player['id'], game['id'])
                 if stat_line:
                     actor.update_stat_line_position_salary(
-                        self.site_abbrv, stat_line['id'], pos, sal)
+                        self.site_abbrv, stat_line['id'], pos, sal, player_site_id)
                 else:
                     print(f'No existing stat_line for {name}. Creating one now.')
                     actor.create_stat_line_with_position_salary(
-                        self.site_abbrv, player['id'], team['id'], game['id'], pos, sal)
+                        self.site_abbrv, player['id'], team['id'], game['id'], pos, sal, player_site_id)

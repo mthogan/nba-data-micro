@@ -395,6 +395,19 @@ def load_game_scores_for_date(date):
 
         actor.update_game_with_scores(game['id'], home_team_score, away_team_score, scoring, home_team_factors, away_team_factors)
 
+def load_game_pace_and_points_for_date(date):
+    """Easier to run the queries from the db rather than write the python code.
+    Yeah, sometimes it's just easier to do that.
+    """
+    update_queries = ["update games g set home_team_fd_points = (select sum(fd_points) from stat_line_points slp where slp.\"date\" = g.\"date\" and slp.team_id=g.home_team_id) where g.\"date\"=%s",
+                     "update games g set home_team_dk_points = (select sum(dk_points) from stat_line_points slp where slp.\"date\" = g.\"date\" and slp.team_id=g.home_team_id) where g.\"date\"=%s",
+                     "update games g set away_team_fd_points = (select sum(fd_points) from stat_line_points slp where slp.\"date\" = g.\"date\" and slp.team_id=g.away_team_id) where g.\"date\"=%s",
+                     "update games g set away_team_dk_points = (select sum(dk_points) from stat_line_points slp where slp.\"date\" = g.\"date\" and slp.team_id=g.away_team_id) where g.\"date\"=%s",
+                     "update games g set pace = (select (home_team_factors->>\'pace\')::NUMERIC from games g2 where g2.id=g.id and home_team_factors is not null) where g.\"date\"=%s"
+                     ]
+    print(f'Updating games\' pace and teams\' points for {date}.')
+    for query in update_queries:
+        actor.call_custom_create_or_update(query, (date,))
 
 
 def gather_srape_load_for_date(date):
@@ -404,3 +417,4 @@ def gather_srape_load_for_date(date):
     load_players_on_date(date)
     load_stat_lines_on_date(date)
     load_game_scores_for_date(date)
+    load_game_pace_and_points_for_date(date)

@@ -7,6 +7,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 from db.db import actor
+from workers.runner import Runner
 
 import utils
 import helpers
@@ -120,6 +121,7 @@ def _get_player_information_from_dict(pinfo, date, site_abbrv):
     team_abbrv = pinfo['t']
     proj_minutes = pinfo['dfnMin']
     proj_points = pinfo['dfn']
+    status = pinfo['is'] if 'is' in pinfo else None
     bulk = pinfo
     player = actor.find_player_by_exact_name(player_name)
     team = actor.find_team_by_site_abbrv('dfn', team_abbrv)
@@ -139,11 +141,11 @@ def _get_player_information_from_dict(pinfo, date, site_abbrv):
     if site_abbrv == 'fd':
         fd_points = proj_points
         fdpp36 = None
-        actor.create_or_update_fd_projection(stat_line['id'], source, bulk, proj_minutes, fd_points, fdpp36, version)
+        actor.create_or_update_fd_projection(stat_line['id'], source, bulk=bulk, minutes=proj_minutes, fd_points=fd_points, fdpp36=fdpp36, version=version, status=status)
     else:
         dk_points = proj_points
         dkpp36 = None
-        actor.create_or_update_dk_projection(stat_line['id'], source, bulk, proj_minutes, dk_points, dkpp36, version)
+        actor.create_or_update_dk_projection(stat_line['id'], source, bulk=bulk, minutes=proj_minutes, dk_points=dk_points, dkpp36=dkpp36, version=version, status=status)
     
 
     #actor.create_or_update_projection(stat_line['id'], source, bulk, proj_minutes, dk_points, fd_points, version)
@@ -215,19 +217,17 @@ def load_projections_from_file(site_abbrv, date, filepath):
             if site_abbrv == 'fd':
                 fd_points = row['S FP']
                 fdpp36 = None
-                actor.create_or_update_fd_projection(stat_line['id'], source, bulk, minutes, fd_points, fdpp36, version)
+                actor.create_or_update_fd_projection(stat_line['id'], source, bulk=bulk, minutes=minutes, fd_points=fd_points, fdpp36=fdpp36, version=version)
             else:
                 dk_points = row['S FP']
                 dkpp36 = None
-                actor.create_or_update_dk_projection(stat_line['id'], source, bulk, minutes, dk_points, dkpp36, version)
+                actor.create_or_update_dk_projection(stat_line['id'], source, bulk=bulk, minutes=minutes, dk_points=dk_points, dkpp36=dkpp36, version=version)
 
 
 def gather_load_projections_for_date(date):
     gather_projections_for_date(date)
     load_json_projections_for_date(date)
 
-
-from workers.runner import Runner
 
 def generate_runner(date):
     vals = ((gather_projections_for_date, (date,)), (load_json_projections_for_date, (date,)))
