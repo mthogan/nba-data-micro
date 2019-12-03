@@ -1,5 +1,4 @@
 import requests
-from lxml import html
 import os
 import csv
 import json
@@ -104,6 +103,7 @@ def gather_json_projections_on_date(date, session=False):
     filepath = _get_json_filepath_from_date(date)
     with open(filepath, 'w') as f:
         f.write(page.text)  # throw the csv file there
+    return date
 
 
 
@@ -247,12 +247,9 @@ def load_json_projections(date, overall_info):
     actor.create_or_update_projection(stat_line_id, source, bulk, minutes, dk_pts, fd_pts, version)
 
 
-def gather_load_projections_for_date(date):
-    logger.info(f'Gathering and loading RG projections for {date}')
-    gather_csv_projections_on_date(date)
-    gather_json_projections_on_date(date)
-    load_json_projections_on_date(date)
-    
-def generate_runner(date):
-    vals = ((gather_csv_projections_on_date, (date,)), (gather_json_projections_on_date, (date,)), (load_json_projections_on_date, (date,)))
-    return Runner(vals)
+def generate_runner():
+    runner = Runner()
+    runner.add('gcsvp', gather_csv_projections_on_date)
+    runner.add('gjsonp', gather_json_projections_on_date)
+    runner.add('ljsonp', load_json_projections_on_date, parents=['gjsonp'])
+    return runner

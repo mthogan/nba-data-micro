@@ -52,6 +52,8 @@ def gather_projections():
         f.write(page.text)
     gather_team_pages(tree, time_string, directory)
 
+    return time_string #returning the date
+
 
 def gather_team_pages(tree, time_string, directory):
     '''
@@ -92,6 +94,7 @@ def scrape_projections_for_date(date):
         with open(filepath, 'r') as f:
             tree = html.fromstring(f.read())
             scrape_player_information_from_tree(tree, filepath)
+    return date
 
 
 csv_headers = ['label', 'name', 'pg_min', 'sg_min', 'sf_min',
@@ -186,13 +189,18 @@ def load_projections_for_date(date):
 
 from workers.runner import Runner
 
-def generate_runner(date):
-    vals = ((gather_projections, (), {}), (scrape_projections_for_date, (date,)), (load_players_on_date, (date,)), (load_projections_for_date, (date,)))
-    return Runner(vals)
-
 def gather_scrape_load_for_date(date):
     logger.info(f'Gathering, scraping, and loading 536 projections for {date}')
     gather_projections()
     scrape_projections_for_date(date)
     load_players_on_date(date)
     load_projections_for_date(date)
+
+def generate_runner():
+    runner = Runner()
+    runner.add('gp', gather_projections)
+    runner.add('spfd', scrape_projections_for_date, parents=['gp'])
+    runner.add('lpod', load_players_on_date, parents=['spfd'])
+    runner.add('lpfd', load_projections_for_date, parents=['spfd'])
+    return runner
+    

@@ -109,6 +109,8 @@ def gather_projections_for_date(date):
         proj_json = json.loads(jres[1])
         _write_projections_to_file(date, site_abbrv, proj_json)
 
+    return date #returning for the next call in runner
+
 
 def load_json_projections_for_date(date):
     logger.info(f'Loading DFN json projections on {date}.')
@@ -224,11 +226,9 @@ def load_projections_from_file(site_abbrv, date, filepath):
                 actor.create_or_update_dk_projection(stat_line['id'], source, bulk=bulk, minutes=minutes, dk_points=dk_points, dkpp36=dkpp36, version=version)
 
 
-def gather_load_projections_for_date(date):
-    gather_projections_for_date(date)
-    load_json_projections_for_date(date)
-
-
-def generate_runner(date):
-    vals = ((gather_projections_for_date, (date,)), (load_json_projections_for_date, (date,)))
-    return Runner(vals)
+def generate_runner():
+    runner = Runner()
+    runner.add('gpfd', gather_projections_for_date)
+    runner.add('ljpfd', load_json_projections_for_date, parents=['gpfd'])
+    return runner
+    

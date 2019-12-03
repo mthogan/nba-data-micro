@@ -8,11 +8,9 @@ from workers.sites.dfs.fanduel import FanDuel, gather_load_projections_for_date 
 from workers.sites.dfs.draftkings import DraftKings
 
 from workers.sites.fivethirtyeight import generate_runner as generate_fte_runner
-
-
 from workers.sites.rotogrinders import generate_runner as generate_rg_runner
 from workers.sites.dailyfantasynerd import generate_runner as generate_dfn_runner, load_json_projections_for_date, load_json_projections_for_month
-
+from workers.sites.vegasinsider import generate_runner as generate_vi_runner
 
 def stat_lines(date):
     # work for yesterday is getting the box scores and updating the statlines
@@ -38,14 +36,21 @@ def outside_projections(date):
 
     # FTE / 538
     #gather_scrape_load_538_for_date(today)
-    '''
-    fte_runner = generate_fte_runner(date)
-    fte_runner.run()
+
+    vi_runner = generate_vi_runner()
+    vi_runner.call('gobd', date)
+
+
+    fte_runner = generate_fte_runner()
+    fte_runner.call('gp')
+
 
     # RG next
-    rg_runner = generate_rg_runner(date)
-    rg_runner.run()
-    '''
+    rg_runner = generate_rg_runner()
+    rg_runner.call('gcsvp', date)
+    rg_runner.call('gjsonp', date)
+
+
     # DFN finally
-    dfn_runner = generate_dfn_runner(date)
-    dfn_runner.run()
+    dfn_runner = generate_dfn_runner()
+    dfn_runner.call('gpfd', date)

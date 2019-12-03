@@ -18,44 +18,54 @@ class Runner(object):
         2: 'failed',
         3: 'complete',
     }
-    
-    def __init__(self, fns):
-        self._fns = []
-        for fn_args in fns:
-            if callable(fn_args) or len(fn_args) == 1:
-                fn = fn_args[0]; args = (); kwargs = {}
-            elif len(fn_args) == 2:
-                fn = fn_args[0]; args = fn_args[1]; kwargs = {}
-            elif len(fn_args) == 3:
-                fn = fn_args[0]; args = fn_args[1]; kwargs = fn_args[2]
-            elif len(fn_args) > 3:
-                raise RunnerError(f'Either 1, 2, or 3 attributes are needed for each function.')
-            elif not callable(fn) and not isinstance(fn, Runner):
-                raise RunnerError(f'Init attribute is function is neither a function or Runner object: {fn.__name__} ')
-            elif not args:
-                raise RunnerError(f'Second paramater for args is not correct. args: {args}')
-            elif type(kwargs) != dict:
-                raise RunnerError(f'Third paramater for kwargs is not correct. kwargs: {kwargs}, type: {type(kwargs)}')
-            self._fns.append((fn, args, kwargs))
 
-    def run(self):
-        for index, vals in enumerate(self._fns):
-            _fn, _args, _kwargs = vals
-            print(f'Running {_fn.__name__} with args {_args} and kwargs {_kwargs}.')
-            try:
-                if _args and _kwargs:
-                    _fn(*_args, **_kwargs)
-                elif _args:
-                    _fn(*_args)
-                elif _kwargs:
-                    _fn(**_kwargs)
-                else:
-                    _fn()
-            except Exception as e:
-                print(e)
-                print(f'Failed with function on index {index}: {e}')
-                break
-            print(f'Completed {_fn.__name__}')
+    def __init__(self):
+        self.operator = {}
+        self.top_level = []
 
-    def status(self):
-        pass
+    def add(self, name, fn, parents=[]):
+        if name in self.operator:
+            raise RunnerError(f"Action's name {name} has already been added. Please choose a different name.")
+        invalid_parents = []
+        for parent in parents:
+            if parent not in self.operator:
+                invalid_parents.append(parent)
+        if invalid_parents:
+            raise RunnerError(f"Parent name {name} has not been declared. Make sure to add parent first.")
+
+        self.operator[name] = {}
+        self.operator[name]['fn'] = fn
+        self.operator[name]['children'] = [] #defining the children
+
+        for parent in parents:
+            self.operator[parent]['children'].append(name)
+
+    def call(self, name, *args, **kwargs):
+        op = self.operator[name]
+        fn = op['fn']
+        children = op['children']
+        print(f'Running {name} with args {args} and kwargs {kwargs}.')
+        try:
+            retval = fn(*args, **kwargs)
+            for child in children:
+                self.call(child, retval)
+            pass
+        except Exception as e:
+            print(e)
+            print(f'Failed with function{e}')
+            raise(e)
+        print(f'Completed {fn.__name__}')
+
+def say(line):
+    print(line)
+    return f"{line} to child"
+
+def say2(line):
+    print(f'2 {line}')
+
+if __name__ == '__main__':
+    runner = Runner()
+    runner.add('say', say)
+    runner.add('say2', say2, parents=['say'])
+    runner.call('say', 'this')
+    runner.call('say2', 'this2')
