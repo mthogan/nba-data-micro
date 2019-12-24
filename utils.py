@@ -74,9 +74,6 @@ def load_players_from_file(filepath, site_abbrv, name_in_row_fn, force=False):
             if not player:
                 logger.warning(f'No player named {name}')
 
-
-
-
 def get_json_filepath_from_date(date, base_directory):
     '''
     To make it easier to know where the data is going.

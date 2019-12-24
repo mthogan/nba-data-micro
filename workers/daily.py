@@ -4,8 +4,8 @@ import datetime
 from workers.sites.basketball_reference import gather_srape_load_for_date as gather_srape_load_br_for_date
 from workers.sites.fantasycruncher import gather_load_results_for_date as gather_load_fc_results_for_date, load_past_results_on_date
 
-from workers.sites.dfs.fanduel import FanDuel, gather_load_projections_for_date as gather_load_fd_projections_for_date
-from workers.sites.dfs.draftkings import DraftKings
+from workers.sites.dfs.fanduel import FanDuel, gather_load_slates_for_date as gather_load_fd_slates_for_date
+from workers.sites.dfs.draftkings import DraftKings, gather_load_contests_for_date as gather_load_dk_contests_for_date
 
 from workers.sites.fivethirtyeight import generate_runner as generate_fte_runner
 from workers.sites.rotogrinders import generate_runner as generate_rg_runner
@@ -21,7 +21,8 @@ def stat_lines(date):
 
 def fantasy_sites(date):
 
-    gather_load_fd_projections_for_date(date)
+    gather_load_fd_slates_for_date(date)
+    gather_load_dk_contests_for_date(date)
 
     fd = FanDuel()
     fd.load_players_on_date(date)

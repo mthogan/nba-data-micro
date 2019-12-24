@@ -1,5 +1,8 @@
-from workers.sites.dfs.dfs_site import DfsSite
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
+from workers.sites.dfs.dfs_site import DfsSite
 from db.db import actor
 
 class FanDuel(DfsSite):
@@ -28,9 +31,7 @@ class FanDuel(DfsSite):
 import requests
 import json
 import datetime
-import dateutil.parser
-from dateutil.tz import UTC
-import pytz
+import os
 
 import utils
 import helpers
@@ -78,14 +79,10 @@ def gather_slates_for_date(date):
 
 def _slate_info_for_date(date):
     filepath = _slate_info_filepath_for_date(date)
+    if not os.path.exists(filepath):
+        return {}
     with open(filepath, 'r') as f:
         return json.load(f)
-
-def _date_from_utc_timestamp(utc_timestamp):
-    eastern = pytz.timezone('US/Eastern')
-    start_datetime_utc = dateutil.parser.parse(utc_timestamp)
-    start_datetime_est = start_datetime_utc.astimezone(eastern)
-    return start_datetime_est.date().isoformat()
 
 def gather_players_for_slate(slate_id, start_date):
     ep = f'{fixture_list_base_url}/{slate_id}/players'
@@ -103,31 +100,23 @@ def gather_slate_info_for_date(date):
 
         start_timestamp = fixture['start_date']
         utc_timestamp_str = start_timestamp[:-1] + ' UTC'
-        start_date = _date_from_utc_timestamp(utc_timestamp_str)
+        start_date = helpers.date_from_utc_timestamp(utc_timestamp_str)
 
-        print(f'Getting players for slate {slate_id} which is on {start_date}')
+        logger.info(f'Getting players for slate {slate_id} which is on {start_date}')
         gather_players_for_slate(slate_id, start_date)
-        continue
 
-        fixture_url = fixture['_url']
-        contest_url = fixture['contests']
-        # now that we have the start_date and the
-        contest_url = f'{fixture_list_base_url}={slate_id}&status=open'
-        fixture_url = f'{fixture_list_base_url}/{slate_id}'
-        fixture_json = _ask_fd_api(player_url)
-        import pdb;pdb.set_trace()
-        print(fixture_json)
-        break
-        print(fixture)
-        print(player_url)
-        print(contest_url)
-        break
+
+def _nba_fixtures_for_date(date):
+    slate_info = _slate_info_for_date(date)
+    if not slate_info:
+        return []
+    fixtures_list = slate_info['fixture_lists']
+    return [fixture for fixture in fixtures_list if fixture['sport'] == 'NBA']
+
 
 def _get_main_slate_id_for_date(date):
     """Need the main slate id for a date to get the player information after"""
-    slate_info = _slate_info_for_date(date)
-    fixtures_list = slate_info['fixture_lists']
-    nba_fixtures = [fixture for fixture in fixtures_list if fixture['sport'] == 'NBA']
+    nba_fixtures = _nba_fixtures_for_date(date)
     for fixture in nba_fixtures:
         if fixture['label'] == 'Main':
             return fixture['id']
@@ -137,9 +126,9 @@ def _get_player_info_for_date(date):
     and then find that slate_id player info file to get the
     names and salaries."""
     main_slate_id = _get_main_slate_id_for_date(date)
-    print(f'Main slate id: {main_slate_id}')
+    logger.info(f'Main slate id: {main_slate_id}')
     filepath = _slate_player_info_filepath_for_date(main_slate_id, date)
-    print(f'Main slate player filepath: {filepath}')
+    logger.info(f'Main slate player filepath: {filepath}')
     with open(filepath, 'r') as f:
         return json.load(f)
     
@@ -173,7 +162,7 @@ def load_player_info_for_date(date):
         player_slate_id = player_['id']
         team_id = player_['team']['_members'][0]
         team_abbrv = team_abbrvs[team_id]
-        print(f'{fullname}, {team_abbrv}, {pos}, {sal}')
+        logger.info(f'{fullname}, {team_abbrv}, {pos}, {sal}')
         player = actor.find_player_by_exact_name(fullname)
         team = actor.find_team_by_abbrv(team_abbrv)
         game = actor.find_game_by_date_and_team(date, team['id'])
@@ -183,17 +172,31 @@ def load_player_info_for_date(date):
         stat_line = actor.find_stat_line_by_player_and_game(
             player['id'], game['id'])
         if stat_line:
-            print(stat_line)
             actor.update_stat_line_position_salary('fd', stat_line['id'], pos, sal, player_slate_id)
         else:
-            print(f'No existing stat_line for {player["fd_name"]}. Creating one now.')
+            logger.info(f'No existing stat_line for {player["fd_name"]}. Creating one now.')
             actor.create_stat_line_with_position_salary('fd', player['id'], team['id'], game['id'], pos, sal, player_slate_id)
     asdf = 5
 
-    #print(player_info)
 
-def gather_load_projections_for_date(date):
+def load_slates_for_date(date):
+    logger.info(f'Loading slates for date {date}')
+    nba_fixtures = _nba_fixtures_for_date(date)
+    for fixture in nba_fixtures:
+        site_id = 2 # FanDuel trusting 2
+        start_timestamp = fixture['start_date']
+        start_time = helpers.datetime_from_utc_timeztamp(start_timestamp)
+        start_date = helpers.date_from_utc_timestamp(start_timestamp)
+        slate_id = fixture['id']
+        label = fixture['label']
+        bulk = fixture
+        logger.info(f'{site_id}, {start_date}, {slate_id}, {start_time}, {label}')
+        actor.create_or_update_slate(site_id=site_id, date=start_date, slate_id=slate_id, start_time=start_time, label=label, bulk=bulk)
+
+
+def gather_load_slates_for_date(date):
     gather_slates_for_date(date)
+    load_slates_for_date(date)
     gather_slate_info_for_date(date)
     load_player_info_for_date(date)
 

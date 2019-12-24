@@ -269,6 +269,7 @@ def load_stat_lines_on_date(date):
         if not player or not game:
             import pdb
             pdb.set_trace()
+            continue
         stat_line = actor.find_stat_line_by_player_and_game(player['id'], game['id'])
         dk_points = stat_dict.pop('dk_points')
         fd_points = stat_dict.pop('fd_points')

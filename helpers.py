@@ -1,11 +1,13 @@
 import datetime
 import calendar
-
+import dateutil.parser
+from dateutil.tz import UTC
+import pytz
 
 def timestamp_to_minutes(timestamp):
-    return time_stamp_to_seconds(timestamp) / 60.0
+    return timestamp_to_seconds(timestamp) / 60.0
 
-def time_stamp_to_seconds(timestamp):
+def timestamp_to_seconds(timestamp):
     if not timestamp or timestamp == '0':
         return 0
     minutes, seconds = timestamp.split(':')
@@ -27,6 +29,17 @@ def iso_dates_in_month(year, month):
     for day in days:
         yield day.isoformat()
 
+def date_from_utc_timestamp(utc_timestamp):
+    eastern = pytz.timezone('US/Eastern')
+    start_datetime_utc = dateutil.parser.parse(utc_timestamp)
+    start_datetime_est = start_datetime_utc.astimezone(eastern)
+    return start_datetime_est.date().isoformat()
+
+def datetime_from_utc_timeztamp(utc_timestamp):
+    eastern = pytz.timezone('US/Eastern')
+    start_datetime_utc = dateutil.parser.parse(utc_timestamp)
+    start_datetime_est = start_datetime_utc.astimezone(eastern)
+    return start_datetime_est
 
 def dates_in_season(season):
     '''
